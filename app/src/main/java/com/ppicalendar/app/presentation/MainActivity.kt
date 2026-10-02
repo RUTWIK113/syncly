@@ -152,11 +152,11 @@ fun SynclySplashScreen() {
             verticalArrangement = Arrangement.Center
         ) {
             Image(
-                painter = painterResource(id = R.drawable.syncly_logou),
-                contentDescription = "Syncly Logo",
+                painter = painterResource(id = R.drawable.sly_loading),
+                contentDescription = "Syncly Loading",
                 modifier = Modifier
-                    .size(105.dp)
-                    .clip(RoundedCornerShape(22.dp))
+                    .size(115.dp)
+                    .clip(RoundedCornerShape(24.dp))
             )
 
             Spacer(modifier = Modifier.height(20.dp))
