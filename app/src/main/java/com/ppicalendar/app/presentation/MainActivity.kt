@@ -115,19 +115,9 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             val settings by viewModel.settings.collectAsState()
-            var isAppReady by remember { mutableStateOf(false) }
-
-            LaunchedEffect(Unit) {
-                delay(650)
-                isAppReady = true
-            }
 
             PPICalendarTheme(darkTheme = settings.isDarkTheme) {
-                if (!isAppReady) {
-                    SynclySplashScreen()
-                } else {
-                    MainAppContent(viewModel = viewModel)
-                }
+                MainAppContent(viewModel = viewModel)
             }
         }
     }
@@ -155,11 +145,11 @@ fun SynclySplashScreen() {
                 painter = painterResource(id = R.drawable.sly_loading),
                 contentDescription = "Syncly Loading",
                 modifier = Modifier
-                    .size(115.dp)
-                    .clip(RoundedCornerShape(24.dp))
+                    .size(180.dp)
+                    .clip(RoundedCornerShape(32.dp))
             )
 
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
             Text(
                 text = "Syncly",
@@ -172,19 +162,11 @@ fun SynclySplashScreen() {
             Spacer(modifier = Modifier.height(6.dp))
 
             Text(
-                text = "Turn campus updates into calendar events.",
+                text = "Stay ahead! Stay synced...",
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.Medium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center
-            )
-
-            Spacer(modifier = Modifier.height(28.dp))
-
-            CircularProgressIndicator(
-                modifier = Modifier.size(24.dp),
-                color = MaterialTheme.colorScheme.primary,
-                strokeWidth = 2.5.dp
             )
         }
     }

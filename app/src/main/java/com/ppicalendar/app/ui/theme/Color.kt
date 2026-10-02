@@ -51,4 +51,5 @@ val AccentWhatsAppGreen = Color(0xFF25D366)
 val AccentGreen = Color(0xFF10B981)
 val AccentAmberBadge = Color(0xFFFFC212)
 val AccentRedBadge = Color(0xFFEF4444)
+val SynclyLinkBlue = Color(0xFF0044CC) // Vibrant Link Blue font for yellow buttons
 

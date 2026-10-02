@@ -304,13 +304,14 @@ fun EventCard(
                         },
                         shape = RoundedCornerShape(8.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = if (isWaGroup) AccentWhatsAppGreen else MaterialTheme.colorScheme.primary,
-                            contentColor = Color.White
+                            containerColor = if (isWaGroup) AccentWhatsAppGreen else com.ppicalendar.app.ui.theme.SynclyPrimaryAmber,
+                            contentColor = if (isWaGroup) Color.White else com.ppicalendar.app.ui.theme.SynclyLinkBlue
                         ),
                         modifier = Modifier.height(34.dp)
                     ) {
                         Text(
                             text = if (isWaGroup) "👥 Join WhatsApp Group" else "🔗 Open Meeting Link",
+                            color = if (isWaGroup) Color.White else com.ppicalendar.app.ui.theme.SynclyLinkBlue,
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
                             maxLines = 1
