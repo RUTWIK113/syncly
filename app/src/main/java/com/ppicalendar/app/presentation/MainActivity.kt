@@ -23,9 +23,13 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.graphics.Color
 import com.ppicalendar.app.ui.theme.PureBlack
+import com.ppicalendar.app.ui.theme.SynclyDarkBg
+import com.ppicalendar.app.ui.theme.SynclyHeaderDark
+import com.ppicalendar.app.ui.theme.SynclyHeaderLight
 import com.ppicalendar.app.ui.theme.SynclyPrimaryAmber
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Business
@@ -213,14 +217,19 @@ fun MainAppContent(viewModel: MainViewModel) {
             onBack = { viewModel.clearSelectedCompany() }
         )
     } else {
+        val isDark = isSystemInDarkTheme() || MaterialTheme.colorScheme.background == SynclyDarkBg
+        val navBarBg = if (isDark) SynclyHeaderDark else SynclyHeaderLight
+        val unselectedColor = if (isDark) Color(0xFFFFE7BA).copy(alpha = 0.75f) else Color(0xFF524000).copy(alpha = 0.8f)
+
         Scaffold(
             snackbarHost = { SnackbarHost(snackbarHostState) },
             bottomBar = {
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
-                    color = MaterialTheme.colorScheme.surface,
+                    color = navBarBg,
+                    shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
                     tonalElevation = 4.dp,
-                    shadowElevation = 8.dp
+                    shadowElevation = if (isDark) 6.dp else 4.dp
                 ) {
                     Row(
                         modifier = Modifier
@@ -249,13 +258,13 @@ fun MainAppContent(viewModel: MainViewModel) {
                                     Icon(
                                         imageVector = screen.icon,
                                         contentDescription = screen.title,
-                                        tint = if (isSelected) PureBlack else MaterialTheme.colorScheme.onSurfaceVariant,
+                                        tint = if (isSelected) PureBlack else unselectedColor,
                                         modifier = Modifier.size(22.dp)
                                     )
                                     Spacer(modifier = Modifier.height(2.dp))
                                     Text(
                                         text = screen.title,
-                                        color = if (isSelected) PureBlack else MaterialTheme.colorScheme.onSurfaceVariant,
+                                        color = if (isSelected) PureBlack else unselectedColor,
                                         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                                         fontSize = 11.sp,
                                         maxLines = 1

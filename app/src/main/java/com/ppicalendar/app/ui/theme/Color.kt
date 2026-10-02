@@ -8,6 +8,10 @@ val SynclyPrimaryAmber = Color(0xFFFFC212)    // FFC212 - Vibrant Golden Amber B
 val SynclyDarkSurface = Color(0xFF1F222B)     // 1F222B - Card / Navigation / Dialog Surface
 val SynclySurfaceVariant = Color(0xFF2D2D32)  // 2D2D32 - Elevated Surface / Chip / Container
 
+// Header & Navigation Bar Colors
+val SynclyHeaderLight = Color(0xFFFFF4D7)     // #FFF4D7 - Warm pastel cream amber (Light mode Header & Bottom Bar)
+val SynclyHeaderDark = Color(0xFF443100)      // #443100 - Deep warm bronze amber (Dark mode Header & Bottom Bar)
+
 // High-Contrast Borders & Outlines
 val SynclyBorder = Color(0xFF383A42)          // Crisp outline for cards & inputs
 val SynclyBorderSubtle = Color(0xFF282A33)    // Subtle inner border

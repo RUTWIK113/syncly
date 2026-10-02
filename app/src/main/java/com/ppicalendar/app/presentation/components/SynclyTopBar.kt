@@ -38,7 +38,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ppicalendar.app.ui.theme.PureBlack
+import com.ppicalendar.app.ui.theme.PureWhite
 import com.ppicalendar.app.ui.theme.SynclyDarkBg
+import com.ppicalendar.app.ui.theme.SynclyHeaderDark
+import com.ppicalendar.app.ui.theme.SynclyHeaderLight
 import com.ppicalendar.app.ui.theme.SynclyPrimaryAmber
 import com.ppicalendar.app.ui.theme.SynclyTextMuted
 
@@ -52,17 +55,20 @@ fun SynclyHeader(
     modifier: Modifier = Modifier
 ) {
     val isDark = isSystemInDarkTheme() || MaterialTheme.colorScheme.background == SynclyDarkBg
+    val headerBg = if (isDark) SynclyHeaderDark else SynclyHeaderLight
+    val titleColor = if (isDark) Color(0xFFFFE082) else Color(0xFF231B00)
+    val subtitleColor = if (isDark) Color(0xFFFFE7BA).copy(alpha = 0.9f) else Color(0xFF524000).copy(alpha = 0.85f)
 
     Surface(
         modifier = modifier.fillMaxWidth(),
-        color = if (isDark) Color.Transparent else SynclyPrimaryAmber,
-        shape = if (isDark) RoundedCornerShape(0.dp) else RoundedCornerShape(bottomStart = 20.dp, bottomEnd = 20.dp),
-        shadowElevation = if (isDark) 0.dp else 2.dp
+        color = headerBg,
+        shape = RoundedCornerShape(bottomStart = 16.dp, bottomEnd = 16.dp),
+        shadowElevation = if (isDark) 4.dp else 2.dp
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = if (isDark) 12.dp else 16.dp)
+                .padding(horizontal = 16.dp, vertical = 14.dp)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -81,7 +87,7 @@ fun SynclyHeader(
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                                 contentDescription = "Back",
-                                tint = if (isDark) SynclyPrimaryAmber else PureBlack,
+                                tint = titleColor,
                                 modifier = Modifier.size(24.dp)
                             )
                         }
@@ -93,7 +99,7 @@ fun SynclyHeader(
                             painter = logo,
                             contentDescription = "App Logo",
                             modifier = Modifier
-                                .size(36.dp)
+                                .size(34.dp)
                                 .clip(RoundedCornerShape(8.dp))
                         )
                         Spacer(modifier = Modifier.width(10.dp))
@@ -102,8 +108,8 @@ fun SynclyHeader(
                     Text(
                         text = title,
                         style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Black,
-                        color = if (isDark) SynclyPrimaryAmber else PureBlack,
+                        fontWeight = FontWeight.Bold,
+                        color = titleColor,
                         letterSpacing = (-0.3).sp
                     )
                 }
@@ -123,8 +129,8 @@ fun SynclyHeader(
                 Text(
                     text = subtitle,
                     style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Medium,
-                    color = if (isDark) MaterialTheme.colorScheme.onSurfaceVariant else Color(0xFF23242B)
+                    fontWeight = FontWeight.Normal,
+                    color = subtitleColor
                 )
             }
         }

@@ -58,6 +58,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.ui.graphics.Color
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -167,7 +168,7 @@ fun CompanyDetailScreen(
                     Icon(
                         imageVector = Icons.Default.Check,
                         contentDescription = "Save Company",
-                        tint = if (MaterialTheme.colorScheme.background == com.ppicalendar.app.ui.theme.SynclyDarkBg) com.ppicalendar.app.ui.theme.SynclyPrimaryAmber else com.ppicalendar.app.ui.theme.PureBlack
+                        tint = if (MaterialTheme.colorScheme.background == com.ppicalendar.app.ui.theme.SynclyDarkBg) Color(0xFFFFE082) else Color(0xFF231B00)
                     )
                 }
             }
