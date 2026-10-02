@@ -133,9 +133,6 @@ fun SynclyHeader(
 
 @Composable
 fun SynclyFooter(modifier: Modifier = Modifier) {
-    var tapCount by androidx.compose.runtime.remember { androidx.compose.runtime.mutableIntStateOf(0) }
-    var showAdminDialog by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
-
     Box(
         modifier = modifier
             .fillMaxWidth()
@@ -148,44 +145,7 @@ fun SynclyFooter(modifier: Modifier = Modifier) {
             fontWeight = FontWeight.Medium,
             color = SynclyTextMuted,
             letterSpacing = 0.5.sp,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.clickable {
-                tapCount++
-                if (tapCount >= 5) {
-                    tapCount = 0
-                    showAdminDialog = true
-                }
-            }
-        )
-    }
-
-    if (showAdminDialog) {
-        androidx.compose.material3.AlertDialog(
-            onDismissRequest = { showAdminDialog = false },
-            title = {
-                Text("👑 Syncly Admin & Developer Portal", fontWeight = FontWeight.Bold)
-            },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(
-                        "• Private Dashboard: Stored locally in /dashboard/index.html. Excluded in .gitignore to remain private from GitHub.",
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                    Text(
-                        "• WhatsApp APK Sharing: You can send 'app-debug.apk' directly to your WhatsApp groups. Users can install it with one tap.",
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                    Text(
-                        "• Feedback Destination: Sent secretly to your configured email.",
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                }
-            },
-            confirmButton = {
-                androidx.compose.material3.TextButton(onClick = { showAdminDialog = false }) {
-                    Text("Close", color = SynclyPrimaryAmber, fontWeight = FontWeight.Bold)
-                }
-            }
+            textAlign = TextAlign.Center
         )
     }
 }

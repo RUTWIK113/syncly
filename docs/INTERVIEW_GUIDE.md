@@ -70,10 +70,9 @@ flowchart TD
         VM --> SETTINGS["SettingsScreen (Gemini Key & Flaw Review)"]
     end
 
-    subgraph TELEMETRY["5. Cloud Analytics & Admin Dashboard"]
+    subgraph TELEMETRY["5. Cloud Analytics Pipeline"]
         VM --> TELEMETRY_MGR["SynclyTelemetryManager"]
         TELEMETRY_MGR --> FIREBASE["Firebase Realtime Database"]
-        FIREBASE --> DASHBOARD["Admin Dashboard (dashboard/index.html - Passcode 113)"]
     end
 ```
 
@@ -182,13 +181,11 @@ flowchart TD
 
 ---
 
-### Module 8: Cloud Telemetry & Web Dashboard
+### Module 8: Cloud Telemetry & Metrics Pipeline
 * **Core Files:**
   - `app/src/main/java/com/ppicalendar/app/data/telemetry/SynclyTelemetryManager.kt`
-  - `dashboard/index.html`
 * **Features:**
   - Sends anonymized usage telemetry (device ID, vault count, synced event count, last active timestamp) to Firebase Realtime Database.
-  - **Web Dashboard:** Protected single-page dashboard with real-time SSE updates, passcode protection (`113`), and CSV export capabilities.
   - **Zero Cost & Privacy:** Built entirely on Firebase Free Spark tier with zero recurring hosting costs.
 
 ---
@@ -251,13 +248,12 @@ flowchart TD
 
 ### Q10: How did you safeguard user privacy and sensitive credentials?
 > **Answer:** 
-> 1. Private web dashboard (`dashboard/`) is strictly excluded in `.gitignore`.
-> 2. `google-services.json` and signing keystores are omitted from git.
-> 3. User placement data is stored 100% locally in SQLite.
-> 4. Developer contact emails are hidden from visible text composables and only invoked dynamically via system `Intent.ACTION_SENDTO`.
+> 1. `google-services.json` and signing keystores are omitted from git.
+> 2. User placement data is stored 100% locally in SQLite.
+> 3. Developer contact emails are hidden from visible text composables and only invoked dynamically via system `Intent.ACTION_SENDTO`.
 
-### Q11: How does the real-time telemetry and web dashboard work without incurring costs?
-> **Answer:** `SynclyTelemetryManager` writes lightweight, anonymized metrics (device ID, vault count, synced events count, app open count, last active timestamp) to Firebase Realtime Database. The web dashboard (`dashboard/index.html`) listens to the Firebase REST SSE endpoint with zero backend infrastructure needed, running completely within the free Firebase Spark tier.
+### Q11: How does the real-time telemetry work without incurring server costs?
+> **Answer:** `SynclyTelemetryManager` writes lightweight, anonymized metrics (device ID, vault count, synced events count, app open count, last active timestamp) to Firebase Realtime Database. This eliminates the need for dedicated servers and operates completely within the free Firebase Spark tier.
 
 ### Q12: How do you test the app's notification pipeline without waiting for real WhatsApp messages?
 > **Answer:** I built a built-in **Test Simulator Dialog** in the UI. It allows developers to inject realistic WhatsApp message templates (e.g. *Microsoft OA*, *Google Interview*, *Pre-Placement Talk with 5 incentive points*) directly into `ProcessNotificationUseCase`, validating extraction, database insertion, and calendar sync instantly.
@@ -282,4 +278,4 @@ flowchart TD
 - **Engineered a Zero-Latency Hybrid NLP Engine** combining regex heuristics with **Google Gemini 1.5 Flash API**, parsing 95% of notices locally in `<5ms` and extracting dates, meeting links, and incentive points.
 - **Integrated Android Calendar Provider & Room DB (v4)** with MD5 deduplication, automated reminder scheduling, and intent fallback mechanisms for restricted permissions.
 - **Architected a Secure Document Vault & Scoped Storage Manager** using `FileProvider` and internal app storage for offline JD documents and notes.
-- **Implemented Real-Time Cloud Telemetry & Analytics** leveraging **Firebase Realtime DB** and a protected admin web dashboard with zero recurring cloud costs.
+- **Implemented Real-Time Cloud Telemetry & Analytics** leveraging **Firebase Realtime DB** with zero recurring cloud costs.
