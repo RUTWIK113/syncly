@@ -43,9 +43,8 @@ class SynclyTelemetryManager(
 ) {
     companion object {
         private const val TAG = "SynclyTelemetry"
-        // Optional Firebase Realtime Database endpoint for free live user telemetry
-        // e.g. "https://syncly-campus-default-rtdb.firebaseio.com"
-        private const val DEFAULT_TELEMETRY_ENDPOINT = ""
+        // Connected Firebase Realtime Database endpoint for free live user telemetry
+        private const val DEFAULT_TELEMETRY_ENDPOINT = "https://campulse-9f1c8-default-rtdb.asia-southeast1.firebasedatabase.app"
     }
 
     private val httpClient = OkHttpClient.Builder()
