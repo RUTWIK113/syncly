@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">Syncly</string>
+    <string name="app_caption">Turn campus updates into calendar events.</string>
+    <string name="notification_listener_service_label">Syncly Notification Listener</string>
+    <string name="channel_placement_alerts">Syncly Campus Alerts</string>
+    <string name="channel_placement_alerts_desc">Alerts for talks, assessments, and interview schedules from WhatsApp</string>
+    <string name="channel_calendar_sync">Syncly Calendar Sync</string>
+    <string name="channel_calendar_sync_desc">Confirmations when events are created in your calendar</string>
+</resources>
