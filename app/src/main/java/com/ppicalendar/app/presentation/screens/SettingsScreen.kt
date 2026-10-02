@@ -155,24 +155,7 @@ fun SettingsScreen(
                 contentPadding = PaddingValues(top = 16.dp, bottom = 80.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // Section 0: Theme & Appearance (Light / Dark mode)
-                item {
-                    Box(modifier = Modifier.padding(horizontal = 16.dp)) {
-                    SettingsSectionCard(title = "Appearance & Theme", icon = Icons.Default.Tune) {
-                        SettingsToggleRow(
-                            title = "Dark Theme",
-                            subtitle = if (liveSettings.isDarkTheme) "Deep charcoal canvas (#171721) with golden amber accents" else "Clean light theme (Default) with golden amber accents",
-                            checked = liveSettings.isDarkTheme,
-                            onCheckedChange = {
-                                viewModel.setDarkTheme(it)
-                                triggerAutoSaveIndicator()
-                            }
-                        )
-                    }
-                }
-            }
-
-            // Section 1: Google Calendar & Permanent Email Connection Card
+                // Section 1: Google Calendar & Permanent Email Connection Card
             item {
                 Box(modifier = Modifier.padding(horizontal = 16.dp)) {
                     SettingsSectionCard(title = "Google Calendar Connection", icon = Icons.Default.Email) {

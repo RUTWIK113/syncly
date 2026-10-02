@@ -217,9 +217,8 @@ fun MainAppContent(viewModel: MainViewModel) {
             onBack = { viewModel.clearSelectedCompany() }
         )
     } else {
-        val isDark = isSystemInDarkTheme() || MaterialTheme.colorScheme.background == SynclyDarkBg
-        val navBarBg = if (isDark) SynclyHeaderDark else SynclyHeaderLight
-        val unselectedColor = if (isDark) Color(0xFFFFE7BA).copy(alpha = 0.75f) else Color(0xFF524000).copy(alpha = 0.8f)
+        val navBarBg = SynclyHeaderLight
+        val unselectedColor = Color(0xFF524000).copy(alpha = 0.8f)
 
         Scaffold(
             snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -227,9 +226,9 @@ fun MainAppContent(viewModel: MainViewModel) {
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
                     color = navBarBg,
-                    shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
-                    tonalElevation = 4.dp,
-                    shadowElevation = if (isDark) 6.dp else 4.dp
+                    shape = RoundedCornerShape(0.dp),
+                    tonalElevation = 2.dp,
+                    shadowElevation = 2.dp
                 ) {
                     Row(
                         modifier = Modifier

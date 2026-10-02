@@ -12,31 +12,10 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
-private val DarkColorScheme = darkColorScheme(
-    primary = SynclyPrimaryAmber,             // #FFC212 - Vibrant Golden Amber
-    onPrimary = SynclyOnPrimary,              // #171721 - Deep Charcoal on Amber
-    primaryContainer = SynclySurfaceVariant,  // #2D2D32
-    onPrimaryContainer = SynclyPrimaryAmber,  // #FFC212
-    secondary = SynclyPrimaryAmber,
-    onSecondary = SynclyOnPrimary,
-    secondaryContainer = SynclyDarkSurface,   // #1F222B
-    onSecondaryContainer = SynclyTextPrimary,
-    tertiary = AccentGreen,
-    onTertiary = PureWhite,
-    background = SynclyDarkBg,                // #171721 - Deep Canvas
-    onBackground = SynclyTextPrimary,         // #FFFFFF
-    surface = SynclyDarkSurface,              // #1F222B - Card / Modal / Nav surface
-    onSurface = SynclyTextPrimary,            // #FFFFFF
-    surfaceVariant = SynclySurfaceVariant,    // #2D2D32 - Chip / Container
-    onSurfaceVariant = SynclyTextSecondary,   // #B0B4C3
-    outline = SynclyBorder,                   // #383A42 - Crisp Card Border
-    outlineVariant = SynclyBorderSubtle
-)
-
 private val LightColorScheme = lightColorScheme(
     primary = SynclyPrimaryAmber,
     onPrimary = PureBlack,
-    primaryContainer = Color(0xFFFFF4D4),
+    primaryContainer = Color(0xFFFFF4D7),
     onPrimaryContainer = PureBlack,
     secondary = SynclyDarkBg,
     onSecondary = PureWhite,
@@ -44,30 +23,30 @@ private val LightColorScheme = lightColorScheme(
     onSecondaryContainer = PureBlack,
     tertiary = AccentGreen,
     onTertiary = PureWhite,
-    background = OffWhite,
+    background = Color(0xFFF9F9FB),
     onBackground = PureBlack,
     surface = LightSurface,
     onSurface = PureBlack,
     surfaceVariant = LightSurfaceVariant,
-    onSurfaceVariant = Gray600,
+    onSurfaceVariant = Gray700,
     outline = LightBorder,
     outlineVariant = SynclyBorderLight
 )
 
 @Composable
 fun PPICalendarTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
-    dynamicColor: Boolean = false, // Pure monochrome theme looks best without dynamic wallpaper tinting
+    darkTheme: Boolean = false,
+    dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
-    val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
+    val colorScheme = LightColorScheme
 
     val view = LocalView.current
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as Activity).window
-            window.statusBarColor = colorScheme.background.toArgb()
-            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !darkTheme
+            window.statusBarColor = Color(0xFFFFF4D7).toArgb()
+            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = true
         }
     }
 

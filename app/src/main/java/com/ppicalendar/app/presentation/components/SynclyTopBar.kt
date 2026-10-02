@@ -54,16 +54,15 @@ fun SynclyHeader(
     actions: (@Composable () -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
-    val isDark = isSystemInDarkTheme() || MaterialTheme.colorScheme.background == SynclyDarkBg
-    val headerBg = if (isDark) SynclyHeaderDark else SynclyHeaderLight
-    val titleColor = if (isDark) Color(0xFFFFE082) else Color(0xFF231B00)
-    val subtitleColor = if (isDark) Color(0xFFFFE7BA).copy(alpha = 0.9f) else Color(0xFF524000).copy(alpha = 0.85f)
+    val headerBg = SynclyHeaderLight
+    val titleColor = Color(0xFF231B00)
+    val subtitleColor = Color(0xFF524000).copy(alpha = 0.85f)
 
     Surface(
         modifier = modifier.fillMaxWidth(),
         color = headerBg,
-        shape = RoundedCornerShape(bottomStart = 16.dp, bottomEnd = 16.dp),
-        shadowElevation = if (isDark) 4.dp else 2.dp
+        shape = RoundedCornerShape(0.dp),
+        shadowElevation = 1.dp
     ) {
         Column(
             modifier = Modifier
