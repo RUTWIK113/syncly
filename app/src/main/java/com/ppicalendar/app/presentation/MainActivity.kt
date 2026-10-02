@@ -115,9 +115,19 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             val settings by viewModel.settings.collectAsState()
+            var isSplashActive by remember { mutableStateOf(true) }
+
+            LaunchedEffect(Unit) {
+                delay(2000L)
+                isSplashActive = false
+            }
 
             PPICalendarTheme(darkTheme = settings.isDarkTheme) {
-                MainAppContent(viewModel = viewModel)
+                if (isSplashActive) {
+                    SynclySplashScreen()
+                } else {
+                    MainAppContent(viewModel = viewModel)
+                }
             }
         }
     }
@@ -145,11 +155,11 @@ fun SynclySplashScreen() {
                 painter = painterResource(id = R.drawable.sly_loading),
                 contentDescription = "Syncly Loading",
                 modifier = Modifier
-                    .size(180.dp)
-                    .clip(RoundedCornerShape(32.dp))
+                    .size(140.dp)
+                    .clip(RoundedCornerShape(26.dp))
             )
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
             Text(
                 text = "Syncly",
@@ -162,7 +172,7 @@ fun SynclySplashScreen() {
             Spacer(modifier = Modifier.height(6.dp))
 
             Text(
-                text = "Stay ahead! Stay synced...",
+                text = "Stay ahead! Stay Synced!",
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.Medium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,

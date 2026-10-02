@@ -67,7 +67,7 @@ fun SynclyHeader(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 14.dp)
+                .padding(start = 16.dp, end = 16.dp, top = 20.dp, bottom = 16.dp)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -121,16 +121,6 @@ fun SynclyHeader(
                         actions()
                     }
                 }
-            }
-
-            if (!subtitle.isNullOrBlank()) {
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = subtitle,
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Normal,
-                    color = subtitleColor
-                )
             }
         }
     }

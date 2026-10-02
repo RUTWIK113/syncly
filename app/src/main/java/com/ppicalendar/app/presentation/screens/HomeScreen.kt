@@ -115,11 +115,9 @@ fun HomeScreen(
 
     Box(modifier = modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
-            // Sticky Top Header with Sly Home Logo (sly_home)
+            // Sticky Top Header
             com.ppicalendar.app.presentation.components.SynclyHeader(
-                title = "Syncly",
-                subtitle = "Stay ahead! Stay synced...",
-                logo = painterResource(id = R.drawable.sly_home)
+                title = "Syncly"
             )
 
             LazyColumn(
