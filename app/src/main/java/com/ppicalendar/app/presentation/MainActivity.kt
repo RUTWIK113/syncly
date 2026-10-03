@@ -248,14 +248,14 @@ fun MainAppContent(viewModel: MainViewModel) {
                                         imageVector = screen.icon,
                                         contentDescription = screen.title,
                                         tint = if (isSelected) SynclyPrimaryAmber else unselectedColor,
-                                        modifier = Modifier.size(22.dp)
+                                        modifier = Modifier.size(26.dp)
                                     )
-                                    Spacer(modifier = Modifier.height(2.dp))
+                                    Spacer(modifier = Modifier.height(3.dp))
                                     Text(
                                         text = screen.title,
                                         color = if (isSelected) SynclyPrimaryAmber else unselectedColor,
                                         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                        fontSize = 11.sp,
+                                        fontSize = 12.sp,
                                         maxLines = 1
                                     )
                                 }
