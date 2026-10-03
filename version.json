@@ -1,7 +1,7 @@
 {
-  "versionCode": 7,
-  "versionName": "1.0.6",
-  "changelog": "• Strictly enforce placement keywords verification\n• Removed Aakhari Prayatnam from sources and keywords\n• Automatic background calendar sync default\n• Interactive KPI Tabs and Responsive Layouts",
+  "versionCode": 8,
+  "versionName": "1.0.7",
+  "changelog": "• Strict conversational / casual message filtering (only real schedules parsed)\n• Enforced date/time requirement for event validation\n• Fully automated Google Calendar sync\n• Removed Aakhari Prayatnam entirely",
   "downloadUrl": "https://rutwik113.github.io/syncly/syncly.apk",
   "isMandatory": false
 }

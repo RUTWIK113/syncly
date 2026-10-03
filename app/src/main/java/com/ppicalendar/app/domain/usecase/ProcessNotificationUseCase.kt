@@ -92,6 +92,24 @@ class ProcessNotificationUseCase(
             return NotificationProcessOutcome.NoKeywordMatch
         }
 
+        // 3c. Filter out pure casual chats, student queries, or greetings
+        val isCasualOrQuestion = lowerText.startsWith("can anyone") ||
+                lowerText.startsWith("does anyone") ||
+                lowerText.startsWith("is anyone") ||
+                lowerText.startsWith("where is") ||
+                lowerText.startsWith("when will") ||
+                lowerText.startsWith("why is") ||
+                lowerText.startsWith("how to") ||
+                lowerText.startsWith("thanks") ||
+                lowerText.startsWith("thank you") ||
+                lowerText.startsWith("congrats") ||
+                lowerText.startsWith("all the best") ||
+                lowerText == "ok" || lowerText == "k" || lowerText == "yes" || lowerText == "no"
+
+        if (isCasualOrQuestion) {
+            return NotificationProcessOutcome.NotPlacementEvent
+        }
+
         // 4. AI / Heuristic Extraction
         var extraction = try {
             extractPlacementEventUseCase(
@@ -103,8 +121,13 @@ class ProcessNotificationUseCase(
             return NotificationProcessOutcome.Error("Extraction failed: ${e.message}", e)
         }
 
-        // If company is empty but message came from a trusted source/sender, fallback to meaningful source title
-        if (extraction.company.isBlank() && isTrustedSource) {
+        // A genuine event MUST be classified as an event
+        if (!extraction.isEvent) {
+            return NotificationProcessOutcome.NotPlacementEvent
+        }
+
+        // If company is empty but message came from a trusted source with genuine timing/date
+        if (extraction.company.isBlank() && isTrustedSource && (extraction.startTime.isNotBlank() || extraction.date.isNotBlank())) {
             val fallbackCompany = when {
                 lowerSender.contains("computer center") || lowerSender.contains("computer centre") || lowerSender.contains("computer centere") || lowerText.contains("computer centre") || lowerText.contains("computer center") -> "Computer Centre IIT Madras"
                 lowerSender.contains("ug mechanical") || lowerSender.contains("me ug placements") || lowerText.contains("ug mechanical") -> "UG Mechanical Placements"
@@ -119,7 +142,8 @@ class ProcessNotificationUseCase(
             )
         }
 
-        if (!extraction.isEvent || extraction.company.isBlank()) {
+        // Final guard: Must be an event, must have a company, and must have at least start time or date
+        if (!extraction.isEvent || extraction.company.isBlank() || (extraction.startTime.isBlank() && extraction.date.isBlank())) {
             return NotificationProcessOutcome.NotPlacementEvent
         }
 
