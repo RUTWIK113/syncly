@@ -39,7 +39,7 @@ class CalendarContractManager(private val context: Context) {
             return@withContext emptyList()
         }
 
-        val calendars = mutableListOf<CalendarInfo>()
+        val rawCalendars = mutableListOf<CalendarInfo>()
         val projection = arrayOf(
             CalendarContract.Calendars._ID,
             CalendarContract.Calendars.CALENDAR_DISPLAY_NAME,
@@ -60,18 +60,28 @@ class CalendarContractManager(private val context: Context) {
 
                 while (it.moveToNext()) {
                     val id = it.getLong(idCol)
-                    val displayName = it.getString(nameCol) ?: "Unnamed Calendar"
-                    val accountName = it.getString(accountCol) ?: "Default Account"
+                    val displayName = it.getString(nameCol) ?: ""
+                    val accountName = it.getString(accountCol) ?: ""
                     val isPrimary = if (primaryCol != -1) it.getInt(primaryCol) == 1 else false
 
-                    calendars.add(
-                        CalendarInfo(
-                            id = id,
-                            displayName = displayName,
-                            accountName = accountName,
-                            isPrimary = isPrimary
+                    val lowerName = displayName.lowercase()
+                    // Filter out secondary calendars like Holidays, Birthdays, Tasks, Contacts
+                    val isSecondary = lowerName.contains("holiday") ||
+                            lowerName.contains("birthday") ||
+                            lowerName.contains("task") ||
+                            lowerName.contains("contact") ||
+                            lowerName.contains("weather")
+
+                    if (!isSecondary && accountName.isNotBlank()) {
+                        rawCalendars.add(
+                            CalendarInfo(
+                                id = id,
+                                displayName = accountName.trim(), // Use clean account email address directly
+                                accountName = accountName.trim(),
+                                isPrimary = isPrimary
+                            )
                         )
-                    )
+                    }
                 }
             }
         } catch (e: Exception) {
@@ -80,7 +90,14 @@ class CalendarContractManager(private val context: Context) {
             cursor?.close()
         }
 
-        calendars
+        // Group by account email so each Google account appears exactly once with its primary calendar
+        val uniqueCalendars = rawCalendars
+            .groupBy { it.accountName.lowercase() }
+            .map { (_, list) ->
+                list.find { it.isPrimary } ?: list.first()
+            }
+
+        uniqueCalendars
     }
 
     suspend fun getDefaultCalendarId(): Long? = withContext(Dispatchers.IO) {
@@ -210,6 +227,10 @@ class CalendarContractManager(private val context: Context) {
             put(CalendarContract.Events.DTEND, adjustedEndMillis)
             put(CalendarContract.Events.EVENT_TIMEZONE, TimeZone.getDefault().id)
             put(CalendarContract.Events.HAS_ALARM, 1)
+            put(CalendarContract.Events.VISIBLE, 1)
+            put(CalendarContract.Events.STATUS, CalendarContract.Events.STATUS_CONFIRMED)
+            put(CalendarContract.Events.AVAILABILITY, CalendarContract.Events.AVAILABILITY_BUSY)
+            put(CalendarContract.Events.GUESTS_CAN_SEE_GUESTS, 1)
         }
 
         try {
@@ -248,9 +269,21 @@ class CalendarContractManager(private val context: Context) {
                     val type = cursor.getString(cursor.getColumnIndexOrThrow(CalendarContract.Calendars.ACCOUNT_TYPE))
                     if (!name.isNullOrBlank() && !type.isNullOrBlank()) {
                         val account = android.accounts.Account(name, type)
+
+                        // 1. Permanently enable background auto-sync on device for this account so user never has to manual sync in settings
+                        try {
+                            android.content.ContentResolver.setIsSyncable(account, CalendarContract.AUTHORITY, 1)
+                            android.content.ContentResolver.setSyncAutomatically(account, CalendarContract.AUTHORITY, true)
+                        } catch (e: Exception) {
+                            Log.w(TAG, "Could not set sync automatically: ${e.message}")
+                        }
+
+                        // 2. Request immediate expedited sync without backoff restrictions
                         val extras = android.os.Bundle().apply {
                             putBoolean(android.content.ContentResolver.SYNC_EXTRAS_MANUAL, true)
                             putBoolean(android.content.ContentResolver.SYNC_EXTRAS_EXPEDITED, true)
+                            putBoolean(android.content.ContentResolver.SYNC_EXTRAS_IGNORE_BACKOFF, true)
+                            putBoolean(android.content.ContentResolver.SYNC_EXTRAS_IGNORE_SETTINGS, true)
                         }
                         android.content.ContentResolver.requestSync(account, CalendarContract.AUTHORITY, extras)
                         Log.d(TAG, "Triggered expedited calendar sync for account: $name ($type)")

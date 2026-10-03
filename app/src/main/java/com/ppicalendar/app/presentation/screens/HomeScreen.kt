@@ -133,6 +133,7 @@ fun HomeScreen(
     val displayedEvents = when (selectedTab) {
         0 -> createdEvents
         1 -> pendingEvents
+        2 -> allEvents
         else -> createdEvents
     }
 
@@ -199,7 +200,7 @@ fun HomeScreen(
                     }
                 }
 
-                // Stat Cards Row - Synced, Pending, Total
+                // Interactive KPI Metric Cards acting as Tabs
                 item {
                     Row(
                         modifier = Modifier
@@ -211,53 +212,26 @@ fun HomeScreen(
                             title = "Synced",
                             count = createdCount.toString(),
                             icon = Icons.Default.CheckCircleOutline,
+                            isSelected = selectedTab == 0,
+                            onClick = { selectedTab = 0 },
                             modifier = Modifier.weight(1f)
                         )
                         StatMetricCard(
                             title = "Pending",
                             count = pendingCount.toString(),
                             icon = Icons.Default.PendingActions,
+                            isSelected = selectedTab == 1,
+                            onClick = { selectedTab = 1 },
                             modifier = Modifier.weight(1f)
                         )
                         StatMetricCard(
-                            title = "Total",
+                            title = "All",
                             count = allEvents.size.toString(),
                             icon = Icons.Default.NotificationsActive,
+                            isSelected = selectedTab == 2,
+                            onClick = { selectedTab = 2 },
                             modifier = Modifier.weight(1f)
                         )
-                    }
-                }
-
-                // Tab Selection - Streamlined to Synced (Default) & Pending
-                item {
-                    Box(modifier = Modifier.padding(horizontal = 16.dp)) {
-                        SecondaryTabRow(
-                            selectedTabIndex = selectedTab,
-                            containerColor = Color.Transparent,
-                            contentColor = MaterialTheme.colorScheme.onBackground,
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Tab(
-                                selected = selectedTab == 0,
-                                onClick = { selectedTab = 0 },
-                                text = {
-                                    Text(
-                                        text = "Synced ($createdCount)",
-                                        fontWeight = if (selectedTab == 0) FontWeight.Bold else FontWeight.Normal
-                                    )
-                                }
-                            )
-                            Tab(
-                                selected = selectedTab == 1,
-                                onClick = { selectedTab = 1 },
-                                text = {
-                                    Text(
-                                        text = "Pending ($pendingCount)",
-                                        fontWeight = if (selectedTab == 1) FontWeight.Bold else FontWeight.Normal
-                                    )
-                                }
-                            )
-                        }
                     }
                 }
 
@@ -551,14 +525,21 @@ fun StatMetricCard(
     title: String,
     count: String,
     icon: ImageVector,
+    isSelected: Boolean = false,
+    onClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     Card(
-        modifier = modifier,
+        modifier = modifier.clickable { onClick() },
         shape = RoundedCornerShape(14.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+        colors = CardDefaults.cardColors(
+            containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface
+        ),
+        border = BorderStroke(
+            width = if (isSelected) 2.dp else 1.dp,
+            color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = if (isSelected) 2.dp else 0.dp)
     ) {
         Column(
             modifier = Modifier
@@ -574,13 +555,14 @@ fun StatMetricCard(
                 Text(
                     text = title,
                     style = MaterialTheme.typography.bodySmall,
-                    fontWeight = FontWeight.Medium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                    color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1
                 )
                 Icon(
                     imageVector = icon,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    tint = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.size(16.dp)
                 )
             }
@@ -591,7 +573,8 @@ fun StatMetricCard(
                 text = count,
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Black,
-                color = MaterialTheme.colorScheme.onSurface
+                color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
+                maxLines = 1
             )
         }
     }

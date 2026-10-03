@@ -50,7 +50,7 @@ class ProcessNotificationUseCase(
         // Mark as processed immediately to prevent duplicate concurrent runs
         processedNotificationRepository.markNotificationProcessed(notificationKey, sender)
 
-        // 3. Trusted source and keyword filtering
+        // 3. Strict whitelisted placement sources filtering
         val lowerText = text.lowercase()
         val lowerSender = sender.lowercase()
 
@@ -58,12 +58,14 @@ class ProcessNotificationUseCase(
             "computer center",
             "computer centre",
             "computer centere",
-            "iit madras",
             "ug mechanical",
             "mechanical 2026",
+            "student announcements",
             "students announcements",
             "me ug placements",
+            "aakhari praytnam",
             "aakhari prayatnam",
+            "aakhari",
             "rutwik"
         )
 
@@ -71,13 +73,8 @@ class ProcessNotificationUseCase(
             lowerSender.contains(it) || lowerText.contains(it)
         }
 
-        val hasKeywordMatch = isTrustedSource || settings.keywords.isEmpty() || settings.keywords.any { keyword ->
-            val kw = keyword.lowercase().trim()
-            kw.isNotBlank() && (lowerText.contains(kw) || lowerSender.contains(kw))
-        }
-
-        if (!hasKeywordMatch) {
-            return NotificationProcessOutcome.NoKeywordMatch
+        if (!isTrustedSource) {
+            return NotificationProcessOutcome.NotPlacementEvent
         }
 
         // 4. AI / Heuristic Extraction

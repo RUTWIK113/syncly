@@ -270,19 +270,6 @@ fun CompaniesScreen(
                                             color = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
                                     }
-
-                                    Button(
-                                        onClick = { isAddPointsDialogOpen = true },
-                                        shape = RoundedCornerShape(12.dp),
-                                        colors = ButtonDefaults.buttonColors(
-                                            containerColor = SynclyPrimaryAmber,
-                                            contentColor = PureBlack
-                                        )
-                                    ) {
-                                        Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
-                                        Spacer(modifier = Modifier.width(4.dp))
-                                        Text("+ Add Points", fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                                    }
                                 }
                             }
                         }
