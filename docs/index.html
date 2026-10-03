@@ -90,6 +90,24 @@
       box-shadow: 0 12px 32px rgba(255, 194, 18, 0.35);
     }
 
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .nav-link {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 0.9rem;
+      transition: color 0.2s ease;
+    }
+
+    .nav-link:hover {
+      color: var(--text-main);
+    }
+
     .nav-btn {
       background: var(--text-main);
       color: #FFFFFF;
@@ -104,6 +122,133 @@
     .nav-btn:hover {
       background: #334155;
       transform: translateY(-1px);
+    }
+
+    /* Release History Styling */
+    .release-timeline {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      max-width: 860px;
+      margin: 0 auto 80px;
+      text-align: left;
+    }
+
+    .release-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 28px 32px;
+      transition: all 0.2s ease;
+      position: relative;
+    }
+
+    .release-card.latest {
+      border: 2px solid var(--primary);
+      box-shadow: 0 10px 30px rgba(255, 194, 18, 0.15);
+    }
+
+    .release-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 16px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 14px;
+    }
+
+    .release-title-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .release-version {
+      font-size: 1.35rem;
+      font-weight: 800;
+      color: var(--text-main);
+    }
+
+    .badge-latest {
+      background: #FEF3C7;
+      color: #92400E;
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px solid #FDE68A;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .badge-stable {
+      background: #F1F5F9;
+      color: #475569;
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px solid #E2E8F0;
+    }
+
+    .release-date {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .release-list {
+      list-style: none;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .release-list li {
+      position: relative;
+      padding-left: 24px;
+      font-size: 0.95rem;
+      color: #334155;
+      line-height: 1.5;
+    }
+
+    .release-list li::before {
+      content: "•";
+      position: absolute;
+      left: 6px;
+      color: var(--primary-hover);
+      font-size: 1.2rem;
+      line-height: 1;
+      top: 0;
+    }
+
+    .release-actions {
+      margin-top: 18px;
+      display: flex;
+      gap: 12px;
+    }
+
+    .release-dl-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--primary-soft);
+      color: #92400E;
+      border: 1px solid #FDE68A;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      text-decoration: none;
+      transition: all 0.2s ease;
+    }
+
+    .release-dl-btn:hover {
+      background: #FDE68A;
     }
 
     /* Hero Section */
@@ -418,7 +563,12 @@
         <img src="logo.png" alt="Syncly Logo" class="brand-img">
         <span>Syncly</span>
       </a>
-      <a href="https://github.com/RUTWIK113/syncly" target="_blank" class="nav-btn">GitHub Repo</a>
+      <div class="nav-links">
+        <a href="#features" class="nav-link">Features</a>
+        <a href="#setup" class="nav-link">Setup</a>
+        <a href="#releases" class="nav-link">Version History</a>
+        <a href="https://github.com/RUTWIK113/syncly" target="_blank" class="nav-btn">GitHub Repo</a>
+      </div>
     </div>
   </nav>
 
@@ -428,6 +578,9 @@
       <div class="hero-logo-wrap">
         <img src="logo.png" alt="Syncly Logo" class="hero-logo">
       </div>
+      <div class="hero-badge">
+        ✨ Version 1.1.0 Live • Instant Calendar Sync & Smart Filters
+      </div>
       <h1>Never Miss a Placement Slot with <span>Syncly</span></h1>
       <p class="hero-desc">
         Syncly automatically detects PPT announcements, online assessments, coding tests, and interview schedules from WhatsApp notifications and syncs them directly into your Google Calendar.
@@ -435,10 +588,10 @@
 
       <div class="cta-group">
         <a href="syncly.apk" download="syncly.apk" class="btn-primary">
-          📥 Download Syncly APK (v1.0.0)
+          📥 Download Syncly APK (v1.1.0)
         </a>
-        <a href="https://github.com/RUTWIK113/syncly/releases" target="_blank" class="btn-secondary">
-          📜 GitHub Releases
+        <a href="#releases" class="btn-secondary">
+          📜 Release History
         </a>
       </div>
 
@@ -475,7 +628,7 @@
     </section>
 
     <!-- Features -->
-    <section>
+    <section id="features">
       <div class="section-title">
         <h2>Why Students Use Syncly</h2>
         <p>Built to remove manual calendar entries and ensure you never miss an assessment window</p>
@@ -521,7 +674,7 @@
     </section>
 
     <!-- Installation Steps -->
-    <section>
+    <section id="setup">
       <div class="section-title">
         <h2>3-Step Quick Setup</h2>
         <p>Simple installation on any Android phone (No root or developer mode required)</p>
@@ -548,6 +701,100 @@
       </div>
     </section>
 
+    <!-- Release History & Changelog -->
+    <section id="releases">
+      <div class="section-title">
+        <h2>Release & Version History</h2>
+        <p>Stay up to date with the latest improvements, fixes, and feature additions</p>
+      </div>
+
+      <div class="release-timeline">
+        <!-- v1.1.0 -->
+        <div class="release-card latest">
+          <div class="release-header">
+            <div class="release-title-group">
+              <span class="release-version">v1.1.0 (Build 11)</span>
+              <span class="badge-latest">Latest Release</span>
+            </div>
+            <span class="release-date">October 2026</span>
+          </div>
+          <ul class="release-list">
+            <li><strong>Instant Background Calendar Sync:</strong> Integrated <code>READ_SYNC_SETTINGS</code> and <code>WRITE_SYNC_SETTINGS</code> permissions to guarantee immediate Google Calendar synchronization without requiring users to manually refresh accounts in phone settings.</li>
+            <li><strong>Expedited Dual Authority Sync:</strong> Enforces automated master sync and triggers expedited refresh on both <code>CalendarContract.AUTHORITY</code> and <code>com.google.android.calendar</code>.</li>
+            <li><strong>Fixed Calendar Provider Exception:</strong> Eliminated restricted <code>VISIBLE</code> column writes that caused calendar insertion failures on select Android versions.</li>
+            <li><strong>Strict Casual Chat Filtering:</strong> Suppresses casual questions, greetings, and conversational chatter from being parsed into calendar events.</li>
+            <li><strong>Source Whitelist Enforcement:</strong> Completely removed and excluded non-official sources (such as Aakhari Prayatnam).</li>
+          </ul>
+          <div class="release-actions">
+            <a href="syncly.apk" download="syncly.apk" class="release-dl-btn">
+              📥 Download v1.1.0 APK
+            </a>
+          </div>
+        </div>
+
+        <!-- v1.0.9 -->
+        <div class="release-card">
+          <div class="release-header">
+            <div class="release-title-group">
+              <span class="release-version">v1.0.9 (Build 10)</span>
+              <span class="badge-stable">Stable</span>
+            </div>
+            <span class="release-date">October 2026</span>
+          </div>
+          <ul class="release-list">
+            <li><strong>Fixed False Update Prompts:</strong> Switched to static compile-time <code>BuildConfig.VERSION_CODE</code> comparison so users already on the newest version never see redundant update dialogs.</li>
+            <li><strong>Instant Update Status Toast:</strong> Added immediate visual confirmation when checking for updates in Settings.</li>
+          </ul>
+        </div>
+
+        <!-- v1.0.8 -->
+        <div class="release-card">
+          <div class="release-header">
+            <div class="release-title-group">
+              <span class="release-version">v1.0.8 (Build 9)</span>
+              <span class="badge-stable">Stable</span>
+            </div>
+            <span class="release-date">October 2026</span>
+          </div>
+          <ul class="release-list">
+            <li><strong>Android 13+ 'Restricted Setting' Helper:</strong> Added an in-app visual walkthrough and direct 1-tap shortcut to App Info to easily bypass Google's sideloaded Notification Access block.</li>
+          </ul>
+        </div>
+
+        <!-- v1.0.4 - v1.0.7 -->
+        <div class="release-card">
+          <div class="release-header">
+            <div class="release-title-group">
+              <span class="release-version">v1.0.4 – v1.0.7</span>
+              <span class="badge-stable">Stable</span>
+            </div>
+            <span class="release-date">October 2026</span>
+          </div>
+          <ul class="release-list">
+            <li><strong>Synced vs. Pending Categorization:</strong> Re-architected Home tab into distinct 'Synced' and 'Pending' feeds with status badges.</li>
+            <li><strong>Manual 'Add to Calendar' Action:</strong> Added a quick 1-tap calendar insert button for any pending notice.</li>
+            <li><strong>Reciprocal Settings Synchronization:</strong> Auto-Sync and Manual Confirmation switches now balance automatically to ensure intended operation.</li>
+          </ul>
+        </div>
+
+        <!-- v1.0.0 -->
+        <div class="release-card">
+          <div class="release-header">
+            <div class="release-title-group">
+              <span class="release-version">v1.0.0 (Build 1)</span>
+              <span class="badge-stable">Initial Release</span>
+            </div>
+            <span class="release-date">October 2026</span>
+          </div>
+          <ul class="release-list">
+            <li><strong>Core Notification Engine:</strong> On-device WhatsApp notification listener for IIT Madras placement messages.</li>
+            <li><strong>Hybrid Rule & AI Extraction:</strong> Parses company names, talk types (PPT, OA, Interview), venues, Google Meet / MS Teams URLs, and timestamps.</li>
+            <li><strong>Direct Calendar Integration:</strong> Native Android CalendarProvider local event insertion with automatic 60-minute alarms.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
     <!-- Privacy Banner -->
     <div class="privacy-banner">
       <h3>🛡️ Built with Student Privacy as Top Priority</h3>
@@ -561,7 +808,8 @@
       <p>© 2026 Syncly • Open Source Placement Project for IIT Madras • Built with ❤️ by Rutwik</p>
       <p style="margin-top: 8px; font-size: 0.8rem;">
         <a href="https://github.com/RUTWIK113/syncly" target="_blank" style="color: var(--text-muted); text-decoration: underline;">GitHub Repository</a> • 
-        <a href="https://github.com/RUTWIK113/syncly/releases" target="_blank" style="color: var(--text-muted); text-decoration: underline;">Releases</a>
+        <a href="https://github.com/RUTWIK113/syncly/releases" target="_blank" style="color: var(--text-muted); text-decoration: underline;">Releases</a> •
+        <a href="#releases" style="color: var(--text-muted); text-decoration: underline;">Version History</a>
       </p>
     </div>
   </footer>
