@@ -12,7 +12,7 @@ class RuleBasedExtractor(
 ) {
 
     private val commonCompanies = listOf(
-        "Computer Centre IIT Madras", "Computer Centre", "Computer Center", "Aakhari Prayatnam",
+        "Computer Centre IIT Madras", "Computer Centre", "Computer Center",
         "UG Mechanical Placements", "ME UG Placements", "Placement Cell IITM", "Placement Cell",
         "Google", "Microsoft", "Jane Street", "Apple", "Amazon", "Uber", "Goldman Sachs",
         "Morgan Stanley", "DE Shaw", "D.E. Shaw", "Tower Research", "Graviton", "Optiver",

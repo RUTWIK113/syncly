@@ -63,9 +63,6 @@ class ProcessNotificationUseCase(
             "student announcements",
             "students announcements",
             "me ug placements",
-            "aakhari praytnam",
-            "aakhari prayatnam",
-            "aakhari",
             "rutwik"
         )
 
@@ -75,6 +72,24 @@ class ProcessNotificationUseCase(
 
         if (!isTrustedSource) {
             return NotificationProcessOutcome.NotPlacementEvent
+        }
+
+        // 3b. Keyword Requirement: The message MUST contain placement-related keywords to be parsed
+        val placementKeywords = listOf(
+            "ppt", "pre-placement", "oa", "online assessment", "interview", "ppi",
+            "test", "shortlist", "placement", "internship", "session", "talk",
+            "coding", "hackerrank", "hackerearth", "mettl", "superset", "assessment",
+            "round", "gd", "group discussion", "deadline", "slot", "schedule", "venue"
+        )
+
+        val matchesKeyword = settings.keywords.any { kw ->
+            kw.isNotBlank() && (lowerText.contains(kw.lowercase()) || lowerSender.contains(kw.lowercase()))
+        } || placementKeywords.any { kw ->
+            lowerText.contains(kw)
+        }
+
+        if (!matchesKeyword) {
+            return NotificationProcessOutcome.NoKeywordMatch
         }
 
         // 4. AI / Heuristic Extraction
@@ -92,7 +107,6 @@ class ProcessNotificationUseCase(
         if (extraction.company.isBlank() && isTrustedSource) {
             val fallbackCompany = when {
                 lowerSender.contains("computer center") || lowerSender.contains("computer centre") || lowerSender.contains("computer centere") || lowerText.contains("computer centre") || lowerText.contains("computer center") -> "Computer Centre IIT Madras"
-                lowerSender.contains("aakhari prayatnam") || lowerText.contains("aakhari prayatnam") -> "Aakhari Prayatnam"
                 lowerSender.contains("ug mechanical") || lowerSender.contains("me ug placements") || lowerText.contains("ug mechanical") -> "UG Mechanical Placements"
                 lowerSender.contains("students announcements") || lowerText.contains("students announcements") -> "IITM Students Announcements"
                 lowerSender.contains("rutwik") || lowerText.contains("rutwik") -> "Rutwik (Placement Notice)"

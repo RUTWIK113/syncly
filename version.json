@@ -1,7 +1,7 @@
 {
-  "versionCode": 6,
-  "versionName": "1.0.5",
-  "changelog": "• Fixed Google Calendar provider insertion permissions (removed restricted visible attribute)\n• Instant automatic 1-tap and background calendar sync\n• Auto-Sync default ON out of the box with optional manual toggle\n• Strict IITM Placement whitelist filtering",
+  "versionCode": 7,
+  "versionName": "1.0.6",
+  "changelog": "• Strictly enforce placement keywords verification\n• Removed Aakhari Prayatnam from sources and keywords\n• Automatic background calendar sync default\n• Interactive KPI Tabs and Responsive Layouts",
   "downloadUrl": "https://rutwik113.github.io/syncly/syncly.apk",
   "isMandatory": false
 }
