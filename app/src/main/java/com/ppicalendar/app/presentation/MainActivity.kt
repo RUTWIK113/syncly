@@ -208,19 +208,22 @@ fun MainAppContent(viewModel: MainViewModel) {
             onBack = { viewModel.clearSelectedCompany() }
         )
     } else {
-        val navBarBg = SynclyHeaderLight
         val unselectedColor = Color(0xFF524000).copy(alpha = 0.8f)
 
         Scaffold(
             snackbarHost = { SnackbarHost(snackbarHostState) },
             bottomBar = {
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    color = navBarBg,
-                    shape = RoundedCornerShape(0.dp),
-                    tonalElevation = 2.dp,
-                    shadowElevation = 2.dp
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(MaterialTheme.colorScheme.background)
                 ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(1.dp)
+                            .background(Color(0xFFE5E7EB))
+                    )
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -233,10 +236,6 @@ fun MainAppContent(viewModel: MainViewModel) {
                             val isSelected = selectedScreenIndex == index
                             Box(
                                 modifier = Modifier
-                                    .clip(RoundedCornerShape(14.dp))
-                                    .background(
-                                        if (isSelected) SynclyPrimaryAmber else Color.Transparent
-                                    )
                                     .clickable { selectedScreenIndex = index }
                                     .padding(horizontal = 14.dp, vertical = 6.dp),
                                 contentAlignment = Alignment.Center
@@ -248,13 +247,13 @@ fun MainAppContent(viewModel: MainViewModel) {
                                     Icon(
                                         imageVector = screen.icon,
                                         contentDescription = screen.title,
-                                        tint = if (isSelected) PureBlack else unselectedColor,
+                                        tint = if (isSelected) SynclyPrimaryAmber else unselectedColor,
                                         modifier = Modifier.size(22.dp)
                                     )
                                     Spacer(modifier = Modifier.height(2.dp))
                                     Text(
                                         text = screen.title,
-                                        color = if (isSelected) PureBlack else unselectedColor,
+                                        color = if (isSelected) SynclyPrimaryAmber else unselectedColor,
                                         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                                         fontSize = 11.sp,
                                         maxLines = 1
