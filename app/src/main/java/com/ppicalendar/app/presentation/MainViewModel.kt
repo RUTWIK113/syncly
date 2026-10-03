@@ -223,11 +223,15 @@ class MainViewModel(
         _selectedCompanyForView.value = null
     }
 
-    fun saveCompanyProfile(company: CompanyProfile) {
+    fun saveCompanyProfile(company: CompanyProfile, keepOpen: Boolean = false) {
         viewModelScope.launch {
             val id = container.companyRepository.insertOrUpdateCompany(company)
-            val updated = container.companyRepository.getCompanyById(id)
-            _selectedCompanyForView.value = updated
+            if (keepOpen) {
+                val updated = container.companyRepository.getCompanyById(id)
+                _selectedCompanyForView.value = updated
+            } else {
+                _selectedCompanyForView.value = null
+            }
             _uiEvents.emit(UiNotification("Company profile saved"))
         }
     }

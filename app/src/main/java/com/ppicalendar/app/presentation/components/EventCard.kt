@@ -3,6 +3,7 @@ package com.ppicalendar.app.presentation.components
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -285,37 +286,51 @@ fun EventCard(
                 }
             }
 
-            // Meeting / WhatsApp Group Link Button
+            // Link Pill (Styled exactly like vault company links)
             if (!event.meetingUrl.isNullOrBlank()) {
-                val isWaGroup = event.meetingUrl.contains("chat.whatsapp.com", ignoreCase = true)
+                val rawUrl = event.meetingUrl
+                val displayUrl = rawUrl
+                    .removePrefix("https://")
+                    .removePrefix("http://")
+                    .removePrefix("www.")
+                val cleanDisplay = if (displayUrl.length > 32) displayUrl.take(29) + "..." else displayUrl
+
                 Spacer(modifier = Modifier.height(8.dp))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Button(
-                        onClick = {
+                    Surface(
+                        shape = RoundedCornerShape(20.dp),
+                        color = MaterialTheme.colorScheme.primaryContainer,
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+                        modifier = Modifier.clickable {
                             try {
-                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(event.meetingUrl)).apply {
+                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(rawUrl)).apply {
                                     flags = Intent.FLAG_ACTIVITY_NEW_TASK
                                 }
                                 context.startActivity(intent)
                             } catch (e: Exception) { }
-                        },
-                        shape = RoundedCornerShape(8.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = if (isWaGroup) AccentWhatsAppGreen else com.ppicalendar.app.ui.theme.SynclyPrimaryAmber,
-                            contentColor = if (isWaGroup) Color.White else com.ppicalendar.app.ui.theme.SynclyLinkBlue
-                        ),
-                        modifier = Modifier.height(34.dp)
+                        }
                     ) {
-                        Text(
-                            text = if (isWaGroup) "👥 Join WhatsApp Group" else "🔗 Open Meeting Link",
-                            color = if (isWaGroup) Color.White else com.ppicalendar.app.ui.theme.SynclyLinkBlue,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold,
-                            maxLines = 1
-                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Link,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(14.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = cleanDisplay,
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                        }
                     }
                 }
             }
