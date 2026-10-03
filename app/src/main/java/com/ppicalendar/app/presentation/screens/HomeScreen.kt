@@ -46,6 +46,12 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.clickable
+import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.RadioButtonChecked
+import androidx.compose.material.icons.filled.RadioButtonUnchecked
+import com.ppicalendar.app.domain.model.CalendarInfo
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -90,10 +96,35 @@ fun HomeScreen(
     val pendingEvents by viewModel.pendingEvents.collectAsState()
     val isPermissionGranted by viewModel.isNotificationListenerGranted.collectAsState()
     val testNoticeCount by viewModel.testNoticeCount.collectAsState()
+    val liveSettings by viewModel.settings.collectAsState()
+    val availableCalendars by viewModel.availableCalendars.collectAsState()
 
     var selectedTab by remember { mutableIntStateOf(0) }
     var pointsFilter by remember { mutableStateOf(PointsFilter.ALL) }
     var eventToDelete by remember { mutableStateOf<PlacementEvent?>(null) }
+    var isAccountDialogVisible by remember { mutableStateOf(false) }
+    var selectedCalendarCandidate by remember { mutableStateOf<CalendarInfo?>(null) }
+
+    val connectedEmail = liveSettings.connectedEmail.ifBlank {
+        availableCalendars.find { it.id == liveSettings.selectedCalendarId }?.accountName
+            ?: availableCalendars.firstOrNull { it.isPrimary }?.accountName
+            ?: ""
+    }
+
+    val currentCalendar = availableCalendars.find { it.id == liveSettings.selectedCalendarId }
+        ?: availableCalendars.find { it.accountName.equals(connectedEmail, ignoreCase = true) }
+        ?: availableCalendars.firstOrNull { it.isPrimary }
+        ?: availableCalendars.firstOrNull()
+
+    fun formatMaskedEmail(email: String): String {
+        if (email.isBlank()) return "Connect Cal"
+        val parts = email.split("@")
+        val user = parts[0]
+        val domain = if (parts.size > 1) "@" + parts[1] else ""
+        val prefix = if (user.length > 3) user.take(3) else user
+        val fullMasked = "$prefix...xxxx$domain"
+        return if (fullMasked.length > 20) fullMasked.take(17) + "..." else fullMasked
+    }
 
     val createdEvents = remember(allEvents) { allEvents.filter { it.status == EventStatus.CREATED_IN_CALENDAR } }
     val createdCount = createdEvents.size
@@ -115,9 +146,41 @@ fun HomeScreen(
 
     Box(modifier = modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
-            // Sticky Top Header
+            // Sticky Top Header with Google Calendar Account Chip
             com.ppicalendar.app.presentation.components.SynclyHeader(
-                title = "Syncly"
+                title = "Syncly",
+                actions = {
+                    androidx.compose.material3.Surface(
+                        shape = RoundedCornerShape(20.dp),
+                        color = Color(0xFFFFF0C2),
+                        border = BorderStroke(1.dp, Color(0xFFE5D5A0)),
+                        modifier = Modifier.clickable {
+                            viewModel.refreshCalendars()
+                            selectedCalendarCandidate = currentCalendar
+                            isAccountDialogVisible = true
+                        }
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.CalendarMonth,
+                                contentDescription = "Google Calendar Account",
+                                tint = Color(0xFF524000),
+                                modifier = Modifier.size(14.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            androidx.compose.material3.Text(
+                                text = if (connectedEmail.isNotBlank()) formatMaskedEmail(connectedEmail) else "Connect Cal",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF3B2E00),
+                                maxLines = 1
+                            )
+                        }
+                    }
+                }
             )
 
             LazyColumn(
@@ -349,6 +412,116 @@ fun HomeScreen(
                 },
                 dismissButton = {
                     androidx.compose.material3.TextButton(onClick = { eventToDelete = null }) {
+                        Text("Cancel")
+                    }
+                },
+                shape = RoundedCornerShape(16.dp)
+            )
+        }
+
+        // Google Calendar Account Picker Dialog
+        if (isAccountDialogVisible) {
+            androidx.compose.material3.AlertDialog(
+                onDismissRequest = { isAccountDialogVisible = false },
+                title = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.CalendarMonth,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Google Calendar Account", fontWeight = FontWeight.Bold)
+                    }
+                },
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(
+                            text = "Choose Google account for automatically syncing placement schedules & reminders:",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+
+                        Spacer(modifier = Modifier.height(6.dp))
+
+                        if (availableCalendars.isEmpty()) {
+                            Text(
+                                text = "No calendar accounts detected. Ensure Calendar permission is granted in Access tab.",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.error
+                            )
+                        } else {
+                            availableCalendars.forEach { cal ->
+                                val isSelected = (selectedCalendarCandidate?.id == cal.id) ||
+                                        (selectedCalendarCandidate == null && cal.id == currentCalendar?.id)
+
+                                Card(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable { selectedCalendarCandidate = cal },
+                                    shape = RoundedCornerShape(10.dp),
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface
+                                    ),
+                                    border = BorderStroke(
+                                        1.dp,
+                                        if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
+                                    )
+                                ) {
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(12.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Icon(
+                                            imageVector = if (isSelected) Icons.Default.RadioButtonChecked else Icons.Default.RadioButtonUnchecked,
+                                            contentDescription = null,
+                                            tint = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                            modifier = Modifier.size(20.dp)
+                                        )
+
+                                        Spacer(modifier = Modifier.width(10.dp))
+
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Text(
+                                                text = cal.accountName,
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                fontWeight = FontWeight.Bold,
+                                                color = MaterialTheme.colorScheme.onSurface
+                                            )
+                                            Text(
+                                                text = cal.displayName + if (cal.isPrimary) " (Primary)" else "",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            selectedCalendarCandidate?.let {
+                                viewModel.confirmCalendarConnection(it)
+                            }
+                            isAccountDialogVisible = false
+                        },
+                        enabled = selectedCalendarCandidate != null || availableCalendars.isNotEmpty(),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary
+                        )
+                    ) {
+                        Text("Confirm & Sync", fontWeight = FontWeight.Bold)
+                    }
+                },
+                dismissButton = {
+                    androidx.compose.material3.TextButton(onClick = { isAccountDialogVisible = false }) {
                         Text("Cancel")
                     }
                 },

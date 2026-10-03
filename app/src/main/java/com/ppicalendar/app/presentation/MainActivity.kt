@@ -72,13 +72,17 @@ import com.ppicalendar.app.presentation.dialogs.TestSimulatorDialog
 import com.ppicalendar.app.presentation.screens.CompaniesScreen
 import com.ppicalendar.app.presentation.screens.HomeScreen
 import com.ppicalendar.app.presentation.screens.PermissionsScreen
+import androidx.compose.foundation.layout.offset
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Shadow
+import androidx.compose.ui.text.TextStyle
 import com.ppicalendar.app.presentation.screens.SettingsScreen
 import com.ppicalendar.app.ui.theme.PPICalendarTheme
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 
 enum class Screen(val title: String, val icon: ImageVector) {
-    HOME("Events", Icons.Default.Home),
+    HOME("Home", Icons.Default.Home),
     COMPANIES("Vault", Icons.Default.Business),
     SETTINGS("Settings", Icons.Default.Settings),
     PERMISSIONS("Access", Icons.Default.Security)
@@ -244,18 +248,37 @@ fun MainAppContent(viewModel: MainViewModel) {
                                     horizontalAlignment = Alignment.CenterHorizontally,
                                     verticalArrangement = Arrangement.Center
                                 ) {
-                                    Icon(
-                                        imageVector = screen.icon,
-                                        contentDescription = screen.title,
-                                        tint = if (isSelected) SynclyPrimaryAmber else unselectedColor,
-                                        modifier = Modifier.size(26.dp)
-                                    )
+                                    Box(contentAlignment = Alignment.Center) {
+                                        if (isSelected) {
+                                            Icon(
+                                                imageVector = screen.icon,
+                                                contentDescription = null,
+                                                tint = Color.Black.copy(alpha = 0.4f),
+                                                modifier = Modifier
+                                                    .size(26.dp)
+                                                    .offset(x = 1.dp, y = 1.2.dp)
+                                            )
+                                        }
+                                        Icon(
+                                            imageVector = screen.icon,
+                                            contentDescription = screen.title,
+                                            tint = if (isSelected) SynclyPrimaryAmber else unselectedColor,
+                                            modifier = Modifier.size(26.dp)
+                                        )
+                                    }
                                     Spacer(modifier = Modifier.height(3.dp))
                                     Text(
                                         text = screen.title,
                                         color = if (isSelected) SynclyPrimaryAmber else unselectedColor,
-                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                        fontWeight = if (isSelected) FontWeight.ExtraBold else FontWeight.Medium,
                                         fontSize = 12.sp,
+                                        style = TextStyle(
+                                            shadow = if (isSelected) Shadow(
+                                                color = Color(0x66000000),
+                                                offset = Offset(1f, 1.5f),
+                                                blurRadius = 3f
+                                            ) else Shadow.None
+                                        ),
                                         maxLines = 1
                                     )
                                 }
