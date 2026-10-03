@@ -1,7 +1,7 @@
 {
-  "versionCode": 5,
-  "versionName": "1.0.4",
-  "changelog": "• Explicit 'Add to Calendar' button on all un-synced events\n• Real-time '✓ Synced' status badges\n• Accurate Synced vs Pending tab categorization\n• Reciprocal Automation Rules synchronization",
+  "versionCode": 6,
+  "versionName": "1.0.5",
+  "changelog": "• Fixed Google Calendar provider insertion permissions (removed restricted visible attribute)\n• Instant automatic 1-tap and background calendar sync\n• Auto-Sync default ON out of the box with optional manual toggle\n• Strict IITM Placement whitelist filtering",
   "downloadUrl": "https://rutwik113.github.io/syncly/syncly.apk",
   "isMandatory": false
 }

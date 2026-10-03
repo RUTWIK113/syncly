@@ -227,26 +227,8 @@ class CalendarContractManager(private val context: Context) {
             put(CalendarContract.Events.DTEND, adjustedEndMillis)
             put(CalendarContract.Events.EVENT_TIMEZONE, TimeZone.getDefault().id)
             put(CalendarContract.Events.HAS_ALARM, 1)
-            put(CalendarContract.Events.VISIBLE, 1)
             put(CalendarContract.Events.STATUS, CalendarContract.Events.STATUS_CONFIRMED)
             put(CalendarContract.Events.AVAILABILITY, CalendarContract.Events.AVAILABILITY_BUSY)
-            put(CalendarContract.Events.GUESTS_CAN_SEE_GUESTS, 1)
-        }
-
-        // Ensure the parent calendar has VISIBLE=1 and SYNC_EVENTS=1
-        try {
-            val calValues = ContentValues().apply {
-                put(CalendarContract.Calendars.VISIBLE, 1)
-                put(CalendarContract.Calendars.SYNC_EVENTS, 1)
-            }
-            context.contentResolver.update(
-                ContentUris.withAppendedId(CalendarContract.Calendars.CONTENT_URI, targetCalendarId),
-                calValues,
-                null,
-                null
-            )
-        } catch (e: Exception) {
-            Log.w(TAG, "Could not set calendar visible/sync: ${e.message}")
         }
 
         try {
