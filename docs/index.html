@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Syncly — Automated Placement Calendar Sync for IIT Madras</title>
   <meta name="description" content="Syncly automatically detects IIT Madras placement announcements, PPTs, online assessments, and interview schedules from WhatsApp and syncs them to your Google Calendar.">
+  <link rel="icon" type="image/png" href="favicon.png">
+  <link rel="apple-touch-icon" href="favicon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -69,16 +71,23 @@
       font-size: 1.35rem;
     }
 
-    .brand-icon {
+    .brand-img {
       width: 40px;
       height: 40px;
-      background: var(--primary);
+      object-fit: contain;
       border-radius: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.25rem;
-      box-shadow: 0 4px 10px rgba(255, 194, 18, 0.35);
+    }
+
+    .hero-logo-wrap {
+      margin-bottom: 24px;
+    }
+
+    .hero-logo {
+      width: 88px;
+      height: 88px;
+      object-fit: contain;
+      border-radius: 22px;
+      box-shadow: 0 12px 32px rgba(255, 194, 18, 0.35);
     }
 
     .nav-btn {
@@ -406,8 +415,8 @@
   <nav>
     <div class="container nav-content">
       <a href="#" class="brand">
-        <div class="brand-icon">📅</div>
-        Syncly
+        <img src="logo.png" alt="Syncly Logo" class="brand-img">
+        <span>Syncly</span>
       </a>
       <a href="https://github.com/RUTWIK113/syncly" target="_blank" class="nav-btn">GitHub Repo</a>
     </div>
@@ -416,6 +425,9 @@
   <!-- Hero Section -->
   <div class="container">
     <section class="hero">
+      <div class="hero-logo-wrap">
+        <img src="logo.png" alt="Syncly Logo" class="hero-logo">
+      </div>
       <h1>Never Miss a Placement Slot with <span>Syncly</span></h1>
       <p class="hero-desc">
         Syncly automatically detects PPT announcements, online assessments, coding tests, and interview schedules from WhatsApp notifications and syncs them directly into your Google Calendar.
