@@ -1,7 +1,7 @@
 {
-  "versionCode": 10,
-  "versionName": "1.0.9",
-  "changelog": "• Fixed false update popup for users on the latest version\n• Added instant 'You are on the latest version' feedback in Settings\n• Android 13+ 'Restricted Setting' bypass shortcut\n• Strict casual message suppression and placement whitelist verification",
+  "versionCode": 11,
+  "versionName": "1.1.0",
+  "changelog": "• Immediate calendar sync without manual account refresh (added READ/WRITE_SYNC_SETTINGS)\n• Fixed restricted calendar provider visibility issue\n• Strict casual message suppression and placement whitelist verification\n• Android 13+ 'Restricted Setting' bypass shortcut",
   "downloadUrl": "https://rutwik113.github.io/syncly/syncly.apk",
   "isMandatory": false
 }
