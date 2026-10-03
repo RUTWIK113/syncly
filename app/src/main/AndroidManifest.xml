@@ -1,14 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- Permissions required for Calendar operations -->
+    <!-- Permissions required for Calendar operations and Sync triggering -->
     <uses-permission android:name="android.permission.READ_CALENDAR" />
     <uses-permission android:name="android.permission.WRITE_CALENDAR" />
+    <uses-permission android:name="android.permission.READ_SYNC_SETTINGS" />
+    <uses-permission android:name="android.permission.WRITE_SYNC_SETTINGS" />
+    <uses-permission android:name="android.permission.GET_ACCOUNTS" />
 
     <!-- Android 13+ Notification permission -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
-    <!-- Network permission for AI Gemini Extraction API -->
+    <!-- Network permission for AI Gemini Extraction API & updates -->
     <uses-permission android:name="android.permission.INTERNET" />
 
     <application

@@ -270,6 +270,7 @@ class CalendarContractManager(private val context: Context) {
 
                         // 1. Permanently enable background auto-sync on device for this account so user never has to manual sync in settings
                         try {
+                            android.content.ContentResolver.setMasterSyncAutomatically(true)
                             android.content.ContentResolver.setIsSyncable(account, CalendarContract.AUTHORITY, 1)
                             android.content.ContentResolver.setSyncAutomatically(account, CalendarContract.AUTHORITY, true)
                         } catch (e: Exception) {
@@ -282,12 +283,18 @@ class CalendarContractManager(private val context: Context) {
                             putBoolean(android.content.ContentResolver.SYNC_EXTRAS_EXPEDITED, true)
                             putBoolean(android.content.ContentResolver.SYNC_EXTRAS_IGNORE_BACKOFF, true)
                             putBoolean(android.content.ContentResolver.SYNC_EXTRAS_IGNORE_SETTINGS, true)
+                            putBoolean("force", true)
                         }
                         android.content.ContentResolver.requestSync(account, CalendarContract.AUTHORITY, extras)
+                        try {
+                            android.content.ContentResolver.requestSync(account, "com.google.android.calendar", extras)
+                        } catch (e: Exception) { }
                         Log.d(TAG, "Triggered expedited calendar sync for account: $name ($type)")
                     }
                 }
             }
+            context.contentResolver.notifyChange(CalendarContract.Events.CONTENT_URI, null)
+            context.contentResolver.notifyChange(CalendarContract.CONTENT_URI, null)
         } catch (e: Exception) {
             Log.w(TAG, "Could not trigger account sync: ${e.message}")
         }
