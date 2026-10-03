@@ -52,6 +52,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import com.ppicalendar.app.presentation.MainViewModel
 
@@ -116,18 +117,77 @@ fun PermissionsScreen(
             // Permission 1: Notification Listener
             item {
                 Box(modifier = Modifier.padding(horizontal = 16.dp)) {
-                PermissionCard(
-                    title = "Notification Listener Access",
-                    description = "Enables listening to WhatsApp notifications for talks, tests, and interview schedules. Operates strictly on notification preview text.",
-                    isGranted = isNotifListenerGranted,
-                    icon = Icons.Default.NotificationsActive,
-                    onGrant = {
-                        val intent = Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)
-                        context.startActivity(intent)
+                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        PermissionCard(
+                            title = "Notification Listener Access",
+                            description = "Enables listening to WhatsApp notifications for talks, tests, and interview schedules. Operates strictly on notification preview text.",
+                            isGranted = isNotifListenerGranted,
+                            icon = Icons.Default.NotificationsActive,
+                            onGrant = {
+                                val intent = Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)
+                                context.startActivity(intent)
+                            }
+                        )
+
+                        if (!isNotifListenerGranted) {
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(14.dp),
+                                colors = CardDefaults.cardColors(containerColor = Color(0xFFFFFBEB)),
+                                border = BorderStroke(1.dp, Color(0xFFFDE68A))
+                            ) {
+                                Column(modifier = Modifier.padding(14.dp)) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Icon(
+                                            imageVector = Icons.Default.Warning,
+                                            contentDescription = null,
+                                            tint = Color(0xFFD97706),
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text(
+                                            text = "Seeing 'Restricted setting' in Android?",
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color(0xFF92400E),
+                                            fontSize = 13.sp
+                                        )
+                                    }
+                                    Spacer(modifier = Modifier.height(6.dp))
+                                    Text(
+                                        text = "Android 13+ restricts downloaded APKs by default. To unlock in 3 quick taps:\n\n1. Tap the button below to open App Info.\n2. Tap the ⋮ (3 dots) in the top-right corner.\n3. Tap 'Allow restricted settings'.\n4. Return here and tap 'Grant Permission'!",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = Color(0xFF78350F),
+                                        lineHeight = 18.sp
+                                    )
+                                    Spacer(modifier = Modifier.height(10.dp))
+                                    OutlinedButton(
+                                        onClick = {
+                                            try {
+                                                val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                                                    data = Uri.fromParts("package", context.packageName, null)
+                                                }
+                                                context.startActivity(intent)
+                                            } catch (e: Exception) {
+                                                // Fallback
+                                            }
+                                        },
+                                        shape = RoundedCornerShape(10.dp),
+                                        border = BorderStroke(1.dp, Color(0xFFD97706)),
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Text(
+                                            text = "Open App Info (Allow Restricted Setting)",
+                                            color = Color(0xFF92400E),
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 12.sp
+                                        )
+                                    }
+                                }
+                            }
+                        }
                     }
-                )
+                }
             }
-        }
 
         // Permission 2: Calendar Access
         item {

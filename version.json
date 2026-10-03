@@ -1,7 +1,7 @@
 {
-  "versionCode": 8,
-  "versionName": "1.0.7",
-  "changelog": "• Strict conversational / casual message filtering (only real schedules parsed)\n• Enforced date/time requirement for event validation\n• Fully automated Google Calendar sync\n• Removed Aakhari Prayatnam entirely",
+  "versionCode": 9,
+  "versionName": "1.0.8",
+  "changelog": "• In-app guide and 1-tap shortcut to bypass Android 13+ 'Restricted Setting' security lock\n• Strict casual message suppression and placement whitelist verification\n• Direct automatic Google Calendar synchronization",
   "downloadUrl": "https://rutwik113.github.io/syncly/syncly.apk",
   "isMandatory": false
 }
