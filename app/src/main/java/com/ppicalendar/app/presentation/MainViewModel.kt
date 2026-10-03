@@ -429,10 +429,12 @@ class MainViewModel(
 
     fun setAutoCalendarCreation(enabled: Boolean) = viewModelScope.launch {
         container.settingsRepository.updateAutomaticCalendarCreation(enabled)
+        container.settingsRepository.updateConfirmationRequired(!enabled)
     }
 
     fun setConfirmationRequired(required: Boolean) = viewModelScope.launch {
         container.settingsRepository.updateConfirmationRequired(required)
+        container.settingsRepository.updateAutomaticCalendarCreation(!required)
     }
 
     fun setAutoJoinWhatsAppGroups(autoJoin: Boolean) = viewModelScope.launch {
