@@ -155,13 +155,18 @@ class MainViewModel(
         }
     }
 
-    fun checkForAppUpdates() {
+    fun checkForAppUpdates(isManualCheck: Boolean = false) {
         viewModelScope.launch {
             try {
                 val update = container.checkAppUpdateUseCase()
                 _appUpdateState.value = update
+                if (isManualCheck && update == null) {
+                    _uiEvents.emit(UiNotification("✓ You are on the latest version of Syncly!"))
+                }
             } catch (e: Exception) {
-                // Non-fatal
+                if (isManualCheck) {
+                    _uiEvents.emit(UiNotification("Could not connect to update server.", isError = true))
+                }
             }
         }
     }

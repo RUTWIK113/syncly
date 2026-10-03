@@ -1,7 +1,7 @@
 {
-  "versionCode": 9,
-  "versionName": "1.0.8",
-  "changelog": "• In-app guide and 1-tap shortcut to bypass Android 13+ 'Restricted Setting' security lock\n• Strict casual message suppression and placement whitelist verification\n• Direct automatic Google Calendar synchronization",
+  "versionCode": 10,
+  "versionName": "1.0.9",
+  "changelog": "• Fixed false update popup for users on the latest version\n• Added instant 'You are on the latest version' feedback in Settings\n• Android 13+ 'Restricted Setting' bypass shortcut\n• Strict casual message suppression and placement whitelist verification",
   "downloadUrl": "https://rutwik113.github.io/syncly/syncly.apk",
   "isMandatory": false
 }
