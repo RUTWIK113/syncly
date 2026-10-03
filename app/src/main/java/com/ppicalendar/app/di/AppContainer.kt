@@ -135,7 +135,8 @@ class DefaultAppContainer(private val context: Context) : AppContainer {
             placementEventRepository = placementEventRepository,
             extractPlacementEventUseCase = extractPlacementEventUseCase,
             resolveDateUseCase = resolveDateUseCase,
-            createCalendarEventUseCase = createCalendarEventUseCase
+            createCalendarEventUseCase = createCalendarEventUseCase,
+            companyRepository = companyRepository
         )
     }
 }

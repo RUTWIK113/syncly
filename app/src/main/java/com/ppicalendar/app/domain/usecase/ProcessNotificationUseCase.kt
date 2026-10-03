@@ -3,6 +3,7 @@ package com.ppicalendar.app.domain.usecase
 import com.ppicalendar.app.domain.model.EventStatus
 import com.ppicalendar.app.domain.model.EventType
 import com.ppicalendar.app.domain.model.PlacementEvent
+import com.ppicalendar.app.domain.repository.CompanyRepository
 import com.ppicalendar.app.domain.repository.PlacementEventRepository
 import com.ppicalendar.app.domain.repository.ProcessedNotificationRepository
 import com.ppicalendar.app.domain.repository.SettingsRepository
@@ -25,7 +26,8 @@ class ProcessNotificationUseCase(
     private val placementEventRepository: PlacementEventRepository,
     private val extractPlacementEventUseCase: ExtractPlacementEventUseCase,
     private val resolveDateUseCase: ResolveDateUseCase,
-    private val createCalendarEventUseCase: CreateCalendarEventUseCase
+    private val createCalendarEventUseCase: CreateCalendarEventUseCase,
+    private val companyRepository: CompanyRepository
 ) {
     suspend operator fun invoke(
         notificationKey: String,
@@ -79,7 +81,7 @@ class ProcessNotificationUseCase(
         // 6. Build PlacementEvent model
         val eventType = EventType.fromString(extraction.eventType)
         val initialStatus = if (extraction.isValidForAutoCreation() && settings.automaticCalendarCreation && !settings.confirmationRequired) {
-            EventStatus.PENDING_CONFIRMATION
+            EventStatus.CREATED_IN_CALENDAR
         } else {
             EventStatus.PENDING_CONFIRMATION
         }
@@ -103,6 +105,20 @@ class ProcessNotificationUseCase(
         // 7. Save to local repository
         val savedId = placementEventRepository.insertEvent(event)
         val savedEvent = event.copy(id = savedId)
+
+        // Automatically ensure company exists in Placement Vault and attach portal/meeting links
+        try {
+            val companyProfile = companyRepository.getOrCreateCompanyByName(savedEvent.company)
+            if (!savedEvent.meetingUrl.isNullOrBlank()) {
+                val existingWeb = companyProfile.website ?: ""
+                if (!existingWeb.contains(savedEvent.meetingUrl)) {
+                    val updatedWeb = if (existingWeb.isBlank()) savedEvent.meetingUrl else "$existingWeb\n${savedEvent.meetingUrl}"
+                    companyRepository.insertOrUpdateCompany(companyProfile.copy(website = updatedWeb))
+                }
+            }
+        } catch (e: Exception) {
+            // Non-fatal
+        }
 
         // 8. Decide on auto-creation vs confirmation
         val isEssentialInfoPresent = savedEvent.date.isNotBlank() && savedEvent.startTime.isNotBlank() && savedEvent.company.isNotBlank()

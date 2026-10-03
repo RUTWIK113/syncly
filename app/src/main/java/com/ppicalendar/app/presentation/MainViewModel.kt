@@ -98,6 +98,27 @@ class MainViewModel(
                 // Ignore
             }
         }
+        // Auto-ensure all companies from events are present in Placement Vault
+        viewModelScope.launch {
+            allEvents.collect { events ->
+                events.forEach { event ->
+                    if (event.company.isNotBlank()) {
+                        try {
+                            val comp = container.companyRepository.getOrCreateCompanyByName(event.company)
+                            if (!event.meetingUrl.isNullOrBlank()) {
+                                val curWeb = comp.website ?: ""
+                                if (!curWeb.contains(event.meetingUrl)) {
+                                    val newWeb = if (curWeb.isBlank()) event.meetingUrl else "$curWeb\n${event.meetingUrl}"
+                                    container.companyRepository.insertOrUpdateCompany(comp.copy(website = newWeb))
+                                }
+                            }
+                        } catch (e: Exception) {
+                            // Non-fatal
+                        }
+                    }
+                }
+            }
+        }
     }
 
     fun checkAppOpenRating() {

@@ -9,8 +9,8 @@ data class CalendarInfo(
 
 data class AppSettings(
     val notificationProcessingEnabled: Boolean = true,
-    val automaticCalendarCreation: Boolean = false,
-    val confirmationRequired: Boolean = true,
+    val automaticCalendarCreation: Boolean = true,
+    val confirmationRequired: Boolean = false,
     val autoJoinWhatsAppGroups: Boolean = false,
     val keywords: List<String> = defaultKeywords,
     val selectedCalendarId: Long? = null,

@@ -26,9 +26,7 @@ class CreateCalendarEventUseCase(
         val alreadyExists = calendarRepository.eventExists(event, targetCalendarId)
         if (alreadyExists) {
             placementEventRepository.updateEventStatus(event.id, EventStatus.CREATED_IN_CALENDAR)
-            return Result.failure(
-                IllegalStateException("An event for ${event.company} (${event.eventType.displayName}) already exists on ${event.date} at ${event.startTime}.")
-            )
+            return Result.success(event.calendarEventId ?: 0L)
         }
 
         // 3. Create event in calendar
