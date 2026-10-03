@@ -233,6 +233,22 @@ class CalendarContractManager(private val context: Context) {
             put(CalendarContract.Events.GUESTS_CAN_SEE_GUESTS, 1)
         }
 
+        // Ensure the parent calendar has VISIBLE=1 and SYNC_EVENTS=1
+        try {
+            val calValues = ContentValues().apply {
+                put(CalendarContract.Calendars.VISIBLE, 1)
+                put(CalendarContract.Calendars.SYNC_EVENTS, 1)
+            }
+            context.contentResolver.update(
+                ContentUris.withAppendedId(CalendarContract.Calendars.CONTENT_URI, targetCalendarId),
+                calValues,
+                null,
+                null
+            )
+        } catch (e: Exception) {
+            Log.w(TAG, "Could not set calendar visible/sync: ${e.message}")
+        }
+
         try {
             val eventUri = context.contentResolver.insert(CalendarContract.Events.CONTENT_URI, values)
                 ?: return@withContext Result.failure(IllegalStateException("Failed to insert event into calendar"))

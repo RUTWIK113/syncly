@@ -60,8 +60,8 @@ class DataStoreManager(private val context: Context) {
 
         AppSettings(
             notificationProcessingEnabled = prefs[PreferencesKeys.NOTIFICATION_PROCESSING] ?: true,
-            automaticCalendarCreation = prefs[PreferencesKeys.AUTO_CALENDAR] ?: false,
-            confirmationRequired = prefs[PreferencesKeys.CONFIRMATION_REQUIRED] ?: true,
+            automaticCalendarCreation = prefs[PreferencesKeys.AUTO_CALENDAR] ?: true,
+            confirmationRequired = prefs[PreferencesKeys.CONFIRMATION_REQUIRED] ?: false,
             autoJoinWhatsAppGroups = prefs[PreferencesKeys.AUTO_JOIN_WA_GROUPS] ?: false,
             keywords = keywordsList,
             selectedCalendarId = prefs[PreferencesKeys.SELECTED_CALENDAR_ID],
