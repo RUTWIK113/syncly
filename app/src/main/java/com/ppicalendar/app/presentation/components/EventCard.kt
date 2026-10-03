@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.graphics.Color
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Delete
@@ -126,10 +127,27 @@ fun EventCard(
                     }
                 }
 
-                // Right: Edit and Delete buttons (Replacing the "In Calendar" tag)
+                // Right: Sync status indicator + Edit + Delete
                 Row(
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
+                    if (event.status == EventStatus.CREATED_IN_CALENDAR && event.calendarEventId != null) {
+                        Surface(
+                            shape = RoundedCornerShape(6.dp),
+                            color = Color(0xFFE6F4EA),
+                            border = BorderStroke(1.dp, Color(0xFFCEEAD6))
+                        ) {
+                            Text(
+                                text = "✓ Synced",
+                                color = Color(0xFF137333),
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                            )
+                        }
+                    }
+
                     IconButton(
                         onClick = onEdit,
                         modifier = Modifier.size(28.dp)
@@ -141,8 +159,6 @@ fun EventCard(
                             modifier = Modifier.size(16.dp)
                         )
                     }
-
-                    Spacer(modifier = Modifier.width(4.dp))
 
                     IconButton(
                         onClick = onDelete,
@@ -282,8 +298,9 @@ fun EventCard(
                 }
             }
 
-            // Row 4: Pending Confirmation Actions (only if pending)
-            if (isPending) {
+            // Row 4: Actions (shown whenever not yet synced to calendar)
+            val isInCalendar = event.status == EventStatus.CREATED_IN_CALENDAR && event.calendarEventId != null
+            if (!isInCalendar) {
                 Spacer(modifier = Modifier.height(8.dp))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -310,6 +327,8 @@ fun EventCard(
                         ),
                         modifier = Modifier.height(32.dp)
                     ) {
+                        Icon(Icons.Default.CalendarMonth, contentDescription = null, modifier = Modifier.size(14.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
                         Text("Add to Calendar", fontWeight = FontWeight.Bold, fontSize = 12.sp)
                     }
                 }

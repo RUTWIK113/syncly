@@ -14,7 +14,7 @@ interface PlacementEventDao {
     @Query("SELECT * FROM placement_events ORDER BY createdAt DESC")
     fun getAllEvents(): Flow<List<PlacementEventEntity>>
 
-    @Query("SELECT * FROM placement_events WHERE status = 'PENDING_CONFIRMATION' ORDER BY createdAt DESC")
+    @Query("SELECT * FROM placement_events WHERE status != 'CREATED_IN_CALENDAR' AND status != 'DISMISSED' ORDER BY createdAt DESC")
     fun getPendingEvents(): Flow<List<PlacementEventEntity>>
 
     @Query("SELECT * FROM placement_events WHERE id = :id")

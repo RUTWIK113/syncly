@@ -93,7 +93,6 @@ fun HomeScreen(
     modifier: Modifier = Modifier
 ) {
     val allEvents by viewModel.allEvents.collectAsState()
-    val pendingEvents by viewModel.pendingEvents.collectAsState()
     val isPermissionGranted by viewModel.isNotificationListenerGranted.collectAsState()
     val testNoticeCount by viewModel.testNoticeCount.collectAsState()
     val liveSettings by viewModel.settings.collectAsState()
@@ -127,6 +126,7 @@ fun HomeScreen(
     }
 
     val createdEvents = remember(allEvents) { allEvents.filter { it.status == EventStatus.CREATED_IN_CALENDAR } }
+    val pendingEvents = remember(allEvents) { allEvents.filter { it.status != EventStatus.CREATED_IN_CALENDAR && it.status != EventStatus.DISMISSED } }
     val createdCount = createdEvents.size
     val pendingCount = pendingEvents.size
 
