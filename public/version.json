@@ -1,7 +1,7 @@
 {
-  "versionCode": 3,
-  "versionName": "1.0.2",
-  "changelog": "• Seamless Out-of-the-box Auto-Sync to Google Calendar\n• Automatic background calendar sync activation\n• Strict IITM placement groups parsing\n• Interactive KPI Tabs & Responsive UI",
+  "versionCode": 4,
+  "versionName": "1.0.3",
+  "changelog": "• Smart Auto-Sync & Confirmation Reciprocal Toggles\n• Enhanced Background Google Calendar Sync\n• Strict IITM Placement Whitelist Filtering\n• Responsive Attachment UI & Interactive KPI Tabs",
   "downloadUrl": "https://rutwik113.github.io/syncly/syncly.apk",
   "isMandatory": false
 }
