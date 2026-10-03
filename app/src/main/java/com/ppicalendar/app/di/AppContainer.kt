@@ -44,6 +44,7 @@ interface AppContainer {
     val createCalendarEventUseCase: CreateCalendarEventUseCase
     val checkDuplicateUseCase: CheckDuplicateUseCase
     val processNotificationUseCase: ProcessNotificationUseCase
+    val checkAppUpdateUseCase: com.ppicalendar.app.domain.usecase.CheckAppUpdateUseCase
 }
 
 class DefaultAppContainer(private val context: Context) : AppContainer {
@@ -138,5 +139,9 @@ class DefaultAppContainer(private val context: Context) : AppContainer {
             createCalendarEventUseCase = createCalendarEventUseCase,
             companyRepository = companyRepository
         )
+    }
+
+    override val checkAppUpdateUseCase: com.ppicalendar.app.domain.usecase.CheckAppUpdateUseCase by lazy {
+        com.ppicalendar.app.domain.usecase.CheckAppUpdateUseCase(context)
     }
 }

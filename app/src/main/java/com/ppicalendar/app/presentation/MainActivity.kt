@@ -345,4 +345,13 @@ fun MainAppContent(viewModel: MainViewModel) {
             }
         )
     }
+
+    // In-App Auto-Update Notification Dialog
+    val appUpdateState by viewModel.appUpdateState.collectAsState()
+    appUpdateState?.let { updateInfo ->
+        com.ppicalendar.app.presentation.dialogs.AppUpdateDialog(
+            updateInfo = updateInfo,
+            onDismiss = { viewModel.dismissUpdateDialog() }
+        )
+    }
 }

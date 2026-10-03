@@ -87,10 +87,14 @@ class MainViewModel(
     private val _ratingPromptState = MutableStateFlow<RatingPromptData?>(null)
     val ratingPromptState: StateFlow<RatingPromptData?> = _ratingPromptState.asStateFlow()
 
+    private val _appUpdateState = MutableStateFlow<com.ppicalendar.app.domain.model.AppUpdateInfo?>(null)
+    val appUpdateState: StateFlow<com.ppicalendar.app.domain.model.AppUpdateInfo?> = _appUpdateState.asStateFlow()
+
     init {
         checkPermissions()
         refreshCalendars()
         checkAppOpenRating()
+        checkForAppUpdates()
         viewModelScope.launch {
             try {
                 container.telemetryManager.syncUserTelemetry()
@@ -149,6 +153,21 @@ class MainViewModel(
             container.dataStoreManager.setLastRatedAppOpenCount(openCount)
             _ratingPromptState.value = null
         }
+    }
+
+    fun checkForAppUpdates() {
+        viewModelScope.launch {
+            try {
+                val update = container.checkAppUpdateUseCase()
+                _appUpdateState.value = update
+            } catch (e: Exception) {
+                // Non-fatal
+            }
+        }
+    }
+
+    fun dismissUpdateDialog() {
+        _appUpdateState.value = null
     }
 
     fun checkPermissions() {
