@@ -250,13 +250,32 @@ fun MainAppContent(viewModel: MainViewModel) {
                                 ) {
                                     Box(contentAlignment = Alignment.Center) {
                                         if (isSelected) {
+                                            val outlineColor = Color(0xFF3B2E00).copy(alpha = 0.65f)
+                                            val outlineDist = 0.6.dp
+                                            // Thin 4-directional outline
                                             Icon(
                                                 imageVector = screen.icon,
                                                 contentDescription = null,
-                                                tint = Color.Black.copy(alpha = 0.4f),
-                                                modifier = Modifier
-                                                    .size(26.dp)
-                                                    .offset(x = 1.dp, y = 1.2.dp)
+                                                tint = outlineColor,
+                                                modifier = Modifier.size(26.dp).offset(x = -outlineDist, y = 0.dp)
+                                            )
+                                            Icon(
+                                                imageVector = screen.icon,
+                                                contentDescription = null,
+                                                tint = outlineColor,
+                                                modifier = Modifier.size(26.dp).offset(x = outlineDist, y = 0.dp)
+                                            )
+                                            Icon(
+                                                imageVector = screen.icon,
+                                                contentDescription = null,
+                                                tint = outlineColor,
+                                                modifier = Modifier.size(26.dp).offset(x = 0.dp, y = -outlineDist)
+                                            )
+                                            Icon(
+                                                imageVector = screen.icon,
+                                                contentDescription = null,
+                                                tint = outlineColor,
+                                                modifier = Modifier.size(26.dp).offset(x = 0.dp, y = outlineDist)
                                             )
                                         }
                                         Icon(
@@ -270,15 +289,8 @@ fun MainAppContent(viewModel: MainViewModel) {
                                     Text(
                                         text = screen.title,
                                         color = if (isSelected) SynclyPrimaryAmber else unselectedColor,
-                                        fontWeight = if (isSelected) FontWeight.ExtraBold else FontWeight.Medium,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                                         fontSize = 12.sp,
-                                        style = TextStyle(
-                                            shadow = if (isSelected) Shadow(
-                                                color = Color(0x66000000),
-                                                offset = Offset(1f, 1.5f),
-                                                blurRadius = 3f
-                                            ) else Shadow.None
-                                        ),
                                         maxLines = 1
                                     )
                                 }
