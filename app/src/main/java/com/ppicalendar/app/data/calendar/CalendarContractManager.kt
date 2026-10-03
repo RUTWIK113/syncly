@@ -227,10 +227,38 @@ class CalendarContractManager(private val context: Context) {
             context.contentResolver.insert(CalendarContract.Reminders.CONTENT_URI, reminderValues)
 
             Log.d(TAG, "Successfully created calendar event with ID: $eventId for ${event.company}")
+            triggerAccountSync(targetCalendarId)
             Result.success(eventId)
         } catch (e: Exception) {
             Log.e(TAG, "Error inserting event into Calendar: ${e.message}", e)
             Result.failure(e)
+        }
+    }
+
+    private fun triggerAccountSync(calendarId: Long) {
+        try {
+            val projection = arrayOf(
+                CalendarContract.Calendars.ACCOUNT_NAME,
+                CalendarContract.Calendars.ACCOUNT_TYPE
+            )
+            val uri = ContentUris.withAppendedId(CalendarContract.Calendars.CONTENT_URI, calendarId)
+            context.contentResolver.query(uri, projection, null, null, null)?.use { cursor ->
+                if (cursor.moveToFirst()) {
+                    val name = cursor.getString(cursor.getColumnIndexOrThrow(CalendarContract.Calendars.ACCOUNT_NAME))
+                    val type = cursor.getString(cursor.getColumnIndexOrThrow(CalendarContract.Calendars.ACCOUNT_TYPE))
+                    if (!name.isNullOrBlank() && !type.isNullOrBlank()) {
+                        val account = android.accounts.Account(name, type)
+                        val extras = android.os.Bundle().apply {
+                            putBoolean(android.content.ContentResolver.SYNC_EXTRAS_MANUAL, true)
+                            putBoolean(android.content.ContentResolver.SYNC_EXTRAS_EXPEDITED, true)
+                        }
+                        android.content.ContentResolver.requestSync(account, CalendarContract.AUTHORITY, extras)
+                        Log.d(TAG, "Triggered expedited calendar sync for account: $name ($type)")
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Could not trigger account sync: ${e.message}")
         }
     }
 
