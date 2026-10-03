@@ -24,6 +24,14 @@ data class AppSettings(
 ) {
     companion object {
         val defaultKeywords = listOf(
+            "computer centere iit madras",
+            "computer center iit madras",
+            "computer centre iit madras",
+            "placements| ug mechanical 2026-2027",
+            "students announcements placements 2026-27",
+            "me ug placements 2026-27",
+            "aakhari prayatnam",
+            "rutwik",
             "PPT Announcement",
             "Pre-placement talk",
             "PPT",

@@ -50,10 +50,30 @@ class ProcessNotificationUseCase(
         // Mark as processed immediately to prevent duplicate concurrent runs
         processedNotificationRepository.markNotificationProcessed(notificationKey, sender)
 
-        // 3. Keyword filtering
+        // 3. Trusted source and keyword filtering
         val lowerText = text.lowercase()
-        val hasKeywordMatch = settings.keywords.isEmpty() || settings.keywords.any { keyword ->
-            lowerText.contains(keyword.lowercase().trim())
+        val lowerSender = sender.lowercase()
+
+        val trustedSources = listOf(
+            "computer center",
+            "computer centre",
+            "computer centere",
+            "iit madras",
+            "ug mechanical",
+            "mechanical 2026",
+            "students announcements",
+            "me ug placements",
+            "aakhari prayatnam",
+            "rutwik"
+        )
+
+        val isTrustedSource = trustedSources.any {
+            lowerSender.contains(it) || lowerText.contains(it)
+        }
+
+        val hasKeywordMatch = isTrustedSource || settings.keywords.isEmpty() || settings.keywords.any { keyword ->
+            val kw = keyword.lowercase().trim()
+            kw.isNotBlank() && (lowerText.contains(kw) || lowerSender.contains(kw))
         }
 
         if (!hasKeywordMatch) {
@@ -61,7 +81,7 @@ class ProcessNotificationUseCase(
         }
 
         // 4. AI / Heuristic Extraction
-        val extraction = try {
+        var extraction = try {
             extractPlacementEventUseCase(
                 text = text,
                 referenceDate = referenceDate,
@@ -69,6 +89,23 @@ class ProcessNotificationUseCase(
             )
         } catch (e: Exception) {
             return NotificationProcessOutcome.Error("Extraction failed: ${e.message}", e)
+        }
+
+        // If company is empty but message came from a trusted source/sender, fallback to meaningful source title
+        if (extraction.company.isBlank() && isTrustedSource) {
+            val fallbackCompany = when {
+                lowerSender.contains("computer center") || lowerSender.contains("computer centre") || lowerSender.contains("computer centere") || lowerText.contains("computer centre") || lowerText.contains("computer center") -> "Computer Centre IIT Madras"
+                lowerSender.contains("aakhari prayatnam") || lowerText.contains("aakhari prayatnam") -> "Aakhari Prayatnam"
+                lowerSender.contains("ug mechanical") || lowerSender.contains("me ug placements") || lowerText.contains("ug mechanical") -> "UG Mechanical Placements"
+                lowerSender.contains("students announcements") || lowerText.contains("students announcements") -> "IITM Students Announcements"
+                lowerSender.contains("rutwik") || lowerText.contains("rutwik") -> "Rutwik (Placement Notice)"
+                sender.isNotBlank() -> sender.trim()
+                else -> "Placement Cell IITM"
+            }
+            extraction = extraction.copy(
+                isEvent = true,
+                company = fallbackCompany
+            )
         }
 
         if (!extraction.isEvent || extraction.company.isBlank()) {
