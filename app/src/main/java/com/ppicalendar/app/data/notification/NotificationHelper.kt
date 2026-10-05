@@ -18,6 +18,7 @@ class NotificationHelper(private val context: Context) {
     companion object {
         const val CHANNEL_ALERTS_ID = "placement_alerts_channel"
         const val CHANNEL_SYNC_ID = "calendar_sync_channel"
+        const val CHANNEL_REMINDERS_ID = "event_reminders_channel"
 
         const val ACTION_CONFIRM_EVENT = "com.ppicalendar.app.ACTION_CONFIRM_EVENT"
         const val ACTION_DISMISS_EVENT = "com.ppicalendar.app.ACTION_DISMISS_EVENT"
@@ -48,9 +49,19 @@ class NotificationHelper(private val context: Context) {
             ).apply {
                 description = context.getString(R.string.channel_calendar_sync_desc)
             }
+            
+            val remindersChannel = NotificationChannel(
+                CHANNEL_REMINDERS_ID,
+                "Event Reminders",
+                NotificationManager.IMPORTANCE_HIGH
+            ).apply {
+                description = "Reminders for upcoming placement events"
+                enableVibration(true)
+            }
 
             notificationManager.createNotificationChannel(alertsChannel)
             notificationManager.createNotificationChannel(syncChannel)
+            notificationManager.createNotificationChannel(remindersChannel)
         }
     }
 
@@ -201,5 +212,75 @@ class NotificationHelper(private val context: Context) {
     fun cancelNotification(notificationId: Int) {
         val notificationManager = NotificationManagerCompat.from(context)
         notificationManager.cancel(notificationId)
+    }
+
+    fun showEventReminderNotification(title: String, company: String, venue: String?, time: String) {
+        val notificationManager = NotificationManagerCompat.from(context)
+
+        val contentIntent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+        }
+        val contentPendingIntent = PendingIntent.getActivity(
+            context,
+            System.currentTimeMillis().toInt(),
+            contentIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val body = buildString {
+            append("Starting in 1 hour at $time")
+            if (!venue.isNullOrBlank()) append("\n📍 Venue: $venue")
+        }
+
+        val builder = NotificationCompat.Builder(context, CHANNEL_REMINDERS_ID)
+            .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .setContentTitle("⏰ Reminder: $company • $title")
+            .setContentText(body)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(body))
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setAutoCancel(true)
+            .setContentIntent(contentPendingIntent)
+
+        try {
+            notificationManager.notify((System.currentTimeMillis() % 10000).toInt(), builder.build())
+        } catch (e: SecurityException) {
+            // Permission handling
+        }
+    }
+
+    fun scheduleEventReminder(event: PlacementEvent) {
+        if (event.date.isBlank() || event.startTime.isBlank()) return
+
+        try {
+            val formatter = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
+            val eventDateTime = java.time.LocalDateTime.parse("${event.date} ${event.startTime}", formatter)
+            val reminderTime = eventDateTime.minusHours(1).atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
+
+            if (reminderTime > System.currentTimeMillis()) {
+                val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as android.app.AlarmManager
+                val intent = Intent(context, EventReminderReceiver::class.java).apply {
+                    putExtra("title", event.eventType.displayName)
+                    putExtra("company", event.company)
+                    putExtra("venue", event.venue)
+                    putExtra("time", event.startTime)
+                }
+                val pendingIntent = PendingIntent.getBroadcast(
+                    context,
+                    event.id.toInt(),
+                    intent,
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                )
+
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    if (alarmManager.canScheduleExactAlarms()) {
+                        alarmManager.setExactAndAllowWhileIdle(android.app.AlarmManager.RTC_WAKEUP, reminderTime, pendingIntent)
+                    }
+                } else {
+                    alarmManager.setExactAndAllowWhileIdle(android.app.AlarmManager.RTC_WAKEUP, reminderTime, pendingIntent)
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 }

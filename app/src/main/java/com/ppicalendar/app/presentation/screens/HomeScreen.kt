@@ -50,6 +50,8 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.RadioButtonChecked
 import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import com.ppicalendar.app.domain.model.CalendarInfo
@@ -62,6 +64,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -101,6 +104,7 @@ fun HomeScreen(
 
     var selectedTab by remember { mutableIntStateOf(0) }
     var eventTypeFilter by remember { mutableStateOf(EventTypeFilter.ALL) }
+    var showPastEvents by remember { mutableStateOf(false) }
     var eventToDelete by remember { mutableStateOf<PlacementEvent?>(null) }
     var isAccountDialogVisible by remember { mutableStateOf(false) }
     var selectedCalendarCandidate by remember { mutableStateOf<CalendarInfo?>(null) }
@@ -331,19 +335,90 @@ fun HomeScreen(
                         }
                     }
                 } else {
-                    // Group and sort by Date and Time
-                    val groupedEvents = filteredEvents
-                        .sortedWith(compareBy({ it.date }, { it.startTime }))
-                        .groupBy { it.date }
+                    val currentDateTime = java.time.LocalDateTime.now()
+                    
+                    val (pastEvents, upcomingEvents) = filteredEvents.partition { event ->
+                        if (event.date.isNotBlank() && event.startTime.isNotBlank()) {
+                            try {
+                                val formatter = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
+                                val eventDateTime = java.time.LocalDateTime.parse(" ", formatter)
+                                eventDateTime.isBefore(currentDateTime)
+                            } catch (e: Exception) {
+                                false
+                            }
+                        } else {
+                            false
+                        }
+                    }
+                    
+                    // 1. Past Events Bar
+                    if (pastEvents.isNotEmpty()) {
+                        item {
+                            Surface(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 8.dp)
+                                    .clickable { showPastEvents = !showPastEvents },
+                                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(16.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text("Past Events ()", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    Icon(
+                                        imageVector = if (showPastEvents) androidx.compose.material.icons.filled.KeyboardArrowUp else androidx.compose.material.icons.filled.KeyboardArrowDown,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                        }
 
-                    groupedEvents.forEach { (dateStr, events) ->
+                        if (showPastEvents) {
+                            val groupedPast = pastEvents.sortedWith(compareBy({ it.date }, { it.startTime })).groupBy { it.date }
+                            groupedPast.forEach { (dateStr, events) ->
+                                val displayDate = if (dateStr.isNotBlank()) {
+                                    com.ppicalendar.app.data.extractor.DateTimeParser.formatIndianDate(dateStr)
+                                } else "Unknown Date"
+                                
+                                item(key = "past_header_" + dateStr) {
+                                    Text(
+                                        text = displayDate,
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.ExtraBold,
+                                        color = MaterialTheme.colorScheme.outline,
+                                        modifier = Modifier.padding(start = 16.dp, top = 8.dp, end = 16.dp, bottom = 2.dp)
+                                    )
+                                }
+                                
+                                items(events, key = { it.id }) { event ->
+                                    Box(modifier = Modifier.padding(horizontal = 16.dp).alpha(0.5f)) {
+                                        EventCard(
+                                            event = event,
+                                            onConfirm = { viewModel.confirmEvent(event) },
+                                            onEdit = { viewModel.openEditDialog(event) },
+                                            onDismiss = { viewModel.dismissEvent(event.id) },
+                                            onDelete = { eventToDelete = event }
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // 2. Upcoming Events
+                    val groupedUpcoming = upcomingEvents.sortedWith(compareBy({ it.date }, { it.startTime })).groupBy { it.date }
+                    groupedUpcoming.forEach { (dateStr, events) ->
                         val displayDate = if (dateStr.isNotBlank()) {
                             com.ppicalendar.app.data.extractor.DateTimeParser.formatIndianDate(dateStr)
                         } else {
                             "Unknown Date"
                         }
                         
-                        item(key = "header_$" + dateStr) {
+                        item(key = "header_" + dateStr) {
                             Text(
                                 text = displayDate,
                                 style = MaterialTheme.typography.titleMedium,

@@ -10,6 +10,7 @@
 
     <!-- Android 13+ Notification permission -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
 
     <!-- Network permission for AI Gemini Extraction API & updates -->
     <uses-permission android:name="android.permission.INTERNET" />
@@ -69,6 +70,10 @@
                 <action android:name="com.ppicalendar.app.ACTION_DISMISS_EVENT" />
             </intent-filter>
         </receiver>
+
+        <!-- Receiver for 1 hour before event reminder -->
+        <receiver android:name=".data.notification.EventReminderReceiver" android:exported="false" />
+
 
         <!-- FileProvider for secure local Syncly files access -->
         <provider

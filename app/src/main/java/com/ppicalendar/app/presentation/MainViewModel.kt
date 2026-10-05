@@ -210,6 +210,9 @@ class MainViewModel(
             result.onSuccess {
                 // Automatically save company to company vault
                 container.companyRepository.getOrCreateCompanyByName(event.company)
+                
+                // Schedule Reminder
+                com.ppicalendar.app.data.notification.NotificationHelper(getApplication()).scheduleEventReminder(event)
 
                 _uiEvents.emit(UiNotification("✅ Added '${event.formattedTitle}' to Calendar!"))
             }.onFailure { error ->
