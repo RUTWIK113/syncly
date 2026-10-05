@@ -1,4 +1,4 @@
-﻿package com.ppicalendar.app.presentation.screens
+package com.ppicalendar.app.presentation.screens
 
 import android.content.Intent
 import android.provider.Settings
@@ -566,7 +566,7 @@ fun SettingsScreen(
 
                                             ---
                                             Device: ${Build.MANUFACTURER} ${Build.MODEL} (Android ${Build.VERSION.RELEASE})
-                                            App Version: 1.0.0
+                                            App Version: ${com.ppicalendar.app.BuildConfig.VERSION_NAME} (${com.ppicalendar.app.BuildConfig.VERSION_CODE})
                                             """.trimIndent()
                                         )
                                     }
@@ -615,7 +615,7 @@ fun SettingsScreen(
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = "Syncly Version 1.0.9",
+                                text = "Syncly Version ${com.ppicalendar.app.BuildConfig.VERSION_NAME}",
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onSurface
