@@ -5,8 +5,8 @@ import kotlinx.serialization.Serializable
 @Serializable
 enum class EventType(val displayName: String) {
     PPI("PPI"),
-    PRE_PLACEMENT_TALK("Pre-Placement Talk"),
-    ONLINE_ASSESSMENT("Online Assessment"),
+    PRE_PLACEMENT_TALK("PPT"),
+    ONLINE_ASSESSMENT("OA"),
     INTERVIEW("Interview"),
     COMPANY_SESSION("Company Session"),
     REGISTRATION_DEADLINE("Registration Deadline"),

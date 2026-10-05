@@ -96,6 +96,7 @@ class GeminiApiExtractor(
         4. If essential information is missing, confidence should be lower and fields left empty.
         5. Extract meeting URLs (Google Meet, Zoom, Teams, HackerRank, HackerEarth, etc.) and venue (e.g. CLT, ICSR, SAC, CRC, Virtual, Online).
         6. IMPORTANT: If the event is a REGISTRATION_DEADLINE or RESUME_DEADLINE, the 'date' and 'start_time' MUST be the actual deadline date and time, NOT the date the message was sent.
+        7. Classify the event primarily as PRE_PLACEMENT_TALK or ONLINE_ASSESSMENT if the keywords suggest so. Only use the other event types if it strictly does not fit PPT or OA.
         
         Return STRICT JSON matching this exact schema:
         {
