@@ -7,6 +7,7 @@ interface EventExtractor {
     suspend fun extractEvent(
         text: String,
         referenceDate: LocalDate = LocalDate.now(),
-        apiKey: String = ""
+        apiKey: String = "",
+        forcePlacement: Boolean = false
     ): ExtractionResult
 }

@@ -10,8 +10,9 @@ class ExtractPlacementEventUseCase(
     suspend operator fun invoke(
         text: String,
         referenceDate: LocalDate = LocalDate.now(),
-        apiKey: String = ""
+        apiKey: String = "",
+        forcePlacement: Boolean = false
     ): ExtractionResult {
-        return eventExtractor.extractEvent(text, referenceDate, apiKey)
+        return eventExtractor.extractEvent(text, referenceDate, apiKey, forcePlacement)
     }
 }

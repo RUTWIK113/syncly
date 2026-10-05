@@ -43,7 +43,7 @@ class RuleBasedExtractor(
         "Virtual", "Online", "MS Teams", "Zoom", "Google Meet"
     )
 
-    fun extract(text: String, referenceDate: LocalDate = LocalDate.now()): ExtractionResult {
+    fun extract(text: String, referenceDate: LocalDate = LocalDate.now(), forcePlacement: Boolean = false): ExtractionResult {
         if (text.isBlank()) {
             return ExtractionResult(isEvent = false)
         }
@@ -64,6 +64,7 @@ class RuleBasedExtractor(
         val incentivePoints = detectIncentivePoints(text)
 
         val isPlacementEvent = company.isNotBlank() && (
+                forcePlacement ||
                 eventType != EventType.OTHER ||
                         text.contains("placement", ignoreCase = true) ||
                         text.contains("talk", ignoreCase = true) ||

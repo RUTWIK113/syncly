@@ -117,24 +117,26 @@ class ProcessNotificationUseCase(
             extractPlacementEventUseCase(
                 text = text,
                 referenceDate = referenceDate,
-                apiKey = if (settings.useAiExtraction) settings.geminiApiKey else ""
+                apiKey = if (settings.useAiExtraction) settings.geminiApiKey else "",
+                forcePlacement = isManualEntry
             )
         } catch (e: Exception) {
             return NotificationProcessOutcome.Error("Extraction failed: ${e.message}", e)
         }
 
         // A genuine event MUST be classified as an event
-        if (!extraction.isEvent) {
+        if (!extraction.isEvent && !isManualEntry) {
             return NotificationProcessOutcome.NotPlacementEvent
         }
 
         // If company is empty but message came from a trusted source with genuine timing/date
-        if (extraction.company.isBlank() && isTrustedSource && (extraction.startTime.isNotBlank() || extraction.date.isNotBlank())) {
+        if (extraction.company.isBlank() && (isManualEntry || (isTrustedSource && (extraction.startTime.isNotBlank() || extraction.date.isNotBlank())))) {
             val fallbackCompany = when {
                 lowerSender.contains("computer center") || lowerSender.contains("computer centre") || lowerSender.contains("computer centere") || lowerText.contains("computer centre") || lowerText.contains("computer center") -> "Computer Centre IIT Madras"
                 lowerSender.contains("ug mechanical") || lowerSender.contains("me ug placements") || lowerText.contains("ug mechanical") -> "UG Mechanical Placements"
                 lowerSender.contains("students announcements") || lowerText.contains("students announcements") -> "IITM Students Announcements"
                 lowerSender.contains("rutwik") || lowerText.contains("rutwik") -> "Rutwik (Placement Notice)"
+                isManualEntry -> "Manual Entry"
                 sender.isNotBlank() -> sender.trim()
                 else -> "Placement Cell IITM"
             }
@@ -145,7 +147,7 @@ class ProcessNotificationUseCase(
         }
 
         // Final guard: Must be an event, must have a company, and must have at least start time or date
-        if (!extraction.isEvent || extraction.company.isBlank() || (extraction.startTime.isBlank() && extraction.date.isBlank())) {
+        if (!isManualEntry && (!extraction.isEvent || extraction.company.isBlank() || (extraction.startTime.isBlank() && extraction.date.isBlank()))) {
             return NotificationProcessOutcome.NotPlacementEvent
         }
 

@@ -17,13 +17,17 @@ class HybridEventExtractor(
     override suspend fun extractEvent(
         text: String,
         referenceDate: LocalDate,
-        apiKey: String
+        apiKey: String,
+        forcePlacement: Boolean
     ): ExtractionResult {
         // If Gemini API Key is provided, attempt AI extraction
         if (apiKey.isNotBlank()) {
             try {
                 Log.d(TAG, "Attempting extraction via Gemini AI...")
-                val result = geminiApiExtractor.extract(text, referenceDate, apiKey)
+                var result = geminiApiExtractor.extract(text, referenceDate, apiKey)
+                if (forcePlacement && result.company.isNotBlank()) {
+                    result = result.copy(isEvent = true)
+                }
                 if (result.isEvent && result.company.isNotBlank()) {
                     Log.d(TAG, "Gemini AI extraction successful: ${result.company} - ${result.eventType}")
                     return result
@@ -35,6 +39,6 @@ class HybridEventExtractor(
 
         // Fallback to offline rule-based & regex heuristics engine
         Log.d(TAG, "Executing offline Rule-Based Extractor...")
-        return ruleBasedExtractor.extract(text, referenceDate)
+        return ruleBasedExtractor.extract(text, referenceDate, forcePlacement)
     }
 }
