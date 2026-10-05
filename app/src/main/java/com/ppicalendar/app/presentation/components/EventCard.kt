@@ -127,7 +127,7 @@ fun EventCard(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    if (event.status == EventStatus.CREATED_IN_CALENDAR && event.calendarEventId != null) {
+                    if (event.status == EventStatus.CREATED_IN_CALENDAR) {
                         androidx.compose.foundation.Image(
                             painter = androidx.compose.ui.res.painterResource(id = com.ppicalendar.app.R.drawable.ic_verified_badge),
                             contentDescription = "Synced",
@@ -274,7 +274,7 @@ fun EventCard(
             }
 
             // Row 4: Actions (shown whenever not yet synced to calendar)
-            val isInCalendar = event.status == EventStatus.CREATED_IN_CALENDAR && event.calendarEventId != null
+            val isInCalendar = event.status == EventStatus.CREATED_IN_CALENDAR
             val isDismissed = event.status == EventStatus.DISMISSED
             if (!isInCalendar) {
                 Spacer(modifier = Modifier.height(8.dp))
