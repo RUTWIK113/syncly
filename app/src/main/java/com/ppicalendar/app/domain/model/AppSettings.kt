@@ -20,7 +20,8 @@ data class AppSettings(
     val geminiApiKey: String = "",
     val useAiExtraction: Boolean = true,
     val isDarkTheme: Boolean = false,
-    val defaultReminderMinutes: Int = 60
+    val defaultReminderMinutes: Int = 60,
+    val accessibilityEnabled: Boolean = false
 ) {
     companion object {
         val defaultKeywords = listOf(

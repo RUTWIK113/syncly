@@ -466,6 +466,10 @@ class MainViewModel(
         container.settingsRepository.updateUseAiExtraction(useAi)
     }
 
+    fun setAccessibilityEnabled(enabled: Boolean) = viewModelScope.launch {
+        container.settingsRepository.updateAccessibilityEnabled(enabled)
+    }
+
     fun setDarkTheme(isDark: Boolean) = viewModelScope.launch {
         container.dataStoreManager.setDarkTheme(isDark)
     }

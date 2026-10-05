@@ -49,6 +49,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.RadioButtonChecked
 import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import com.ppicalendar.app.domain.model.CalendarInfo
@@ -503,19 +504,16 @@ fun HomeScreen(
             )
         }
 
-        // Floating Action Button - Removed automatically after used 3 times
-        if (testNoticeCount < 3) {
-            val remaining = 3 - testNoticeCount
-            ExtendedFloatingActionButton(
-                onClick = { viewModel.openSimulator() },
-                icon = { Icon(Icons.Default.Science, contentDescription = null) },
-                text = { Text("Test Notice ($remaining left)", fontWeight = FontWeight.Bold) },
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary,
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(16.dp)
-            )
+        // Floating Action Button for manual entry
+        androidx.compose.material3.FloatingActionButton(
+            onClick = { viewModel.openSimulator() },
+            containerColor = MaterialTheme.colorScheme.primary,
+            contentColor = MaterialTheme.colorScheme.onPrimary,
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(16.dp)
+        ) {
+            Icon(Icons.Default.Add, contentDescription = "Manual Entry")
         }
     }
 }

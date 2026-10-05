@@ -17,4 +17,5 @@ interface SettingsRepository {
     suspend fun updateConnectedAccount(email: String, accountName: String, isVerified: Boolean, calendarId: Long?)
     suspend fun updateGeminiApiKey(apiKey: String)
     suspend fun updateUseAiExtraction(useAi: Boolean)
+    suspend fun updateAccessibilityEnabled(enabled: Boolean)
 }

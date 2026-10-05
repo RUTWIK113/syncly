@@ -20,6 +20,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.graphics.Color
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Link
@@ -35,7 +36,13 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -60,6 +67,7 @@ fun EventCard(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
+    var menuExpanded by remember { mutableStateOf(false) }
     val isPending = event.status == EventStatus.PENDING_CONFIRMATION
 
     Card(
@@ -300,6 +308,7 @@ fun EventCard(
 
             // Row 4: Actions (shown whenever not yet synced to calendar)
             val isInCalendar = event.status == EventStatus.CREATED_IN_CALENDAR && event.calendarEventId != null
+            val isDismissed = event.status == EventStatus.DISMISSED
             if (!isInCalendar) {
                 Spacer(modifier = Modifier.height(8.dp))
                 Row(
@@ -307,29 +316,49 @@ fun EventCard(
                     horizontalArrangement = Arrangement.End,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    OutlinedButton(
-                        onClick = onDismiss,
-                        shape = RoundedCornerShape(8.dp),
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-                        modifier = Modifier.height(32.dp)
-                    ) {
-                        Text("Dismiss", color = MaterialTheme.colorScheme.onSurface, fontSize = 12.sp)
-                    }
-
-                    Spacer(modifier = Modifier.width(8.dp))
-
-                    Button(
-                        onClick = onConfirm,
-                        shape = RoundedCornerShape(8.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primary,
-                            contentColor = MaterialTheme.colorScheme.onPrimary
-                        ),
-                        modifier = Modifier.height(32.dp)
-                    ) {
-                        Icon(Icons.Default.CalendarMonth, contentDescription = null, modifier = Modifier.size(14.dp))
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text("Add to Calendar", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                    if (isDismissed) {
+                        androidx.compose.foundation.layout.Box {
+                            IconButton(onClick = { menuExpanded = true }) {
+                                Icon(Icons.Default.MoreVert, contentDescription = "More options")
+                            }
+                            DropdownMenu(
+                                expanded = menuExpanded,
+                                onDismissRequest = { menuExpanded = false }
+                            ) {
+                                DropdownMenuItem(
+                                    text = { Text("Add to Calendar") },
+                                    onClick = { 
+                                        menuExpanded = false
+                                        onConfirm() 
+                                    }
+                                )
+                            }
+                        }
+                    } else {
+                        OutlinedButton(
+                            onClick = onDismiss,
+                            shape = RoundedCornerShape(8.dp),
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+                            modifier = Modifier.height(32.dp)
+                        ) {
+                            Text("Dismiss", color = MaterialTheme.colorScheme.onSurface, fontSize = 12.sp)
+                        }
+    
+                        Spacer(modifier = Modifier.width(8.dp))
+    
+                        Button(
+                            onClick = onConfirm,
+                            shape = RoundedCornerShape(8.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.primary,
+                                contentColor = MaterialTheme.colorScheme.onPrimary
+                            ),
+                            modifier = Modifier.height(32.dp)
+                        ) {
+                            Icon(Icons.Default.CalendarMonth, contentDescription = null, modifier = Modifier.size(14.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Add to Calendar", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                        }
                     }
                 }
             }

@@ -95,6 +95,7 @@ class GeminiApiExtractor(
         3. Never invent missing information. If date or time is missing, keep the field as an empty string "".
         4. If essential information is missing, confidence should be lower and fields left empty.
         5. Extract meeting URLs (Google Meet, Zoom, Teams, HackerRank, HackerEarth, etc.) and venue (e.g. CLT, ICSR, SAC, CRC, Virtual, Online).
+        6. IMPORTANT: If the event is a REGISTRATION_DEADLINE or RESUME_DEADLINE, the 'date' and 'start_time' MUST be the actual deadline date and time, NOT the date the message was sent.
         
         Return STRICT JSON matching this exact schema:
         {

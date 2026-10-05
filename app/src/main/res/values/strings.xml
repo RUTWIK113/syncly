@@ -6,4 +6,5 @@
     <string name="channel_placement_alerts_desc">Alerts for talks, assessments, and interview schedules from WhatsApp</string>
     <string name="channel_calendar_sync">Syncly Calendar Sync</string>
     <string name="channel_calendar_sync_desc">Confirmations when events are created in your calendar</string>
+    <string name="accessibility_service_description">Capture WhatsApp messages when the app is open.</string>
 </resources>

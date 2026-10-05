@@ -213,16 +213,6 @@ fun CompanyDetailScreen(
                             singleLine = true
                         )
 
-                        OutlinedTextField(
-                            value = payScale,
-                            onValueChange = { payScale = it },
-                            label = { Text("Pay Scale / CTC Package") },
-                            placeholder = { Text("e.g. 24 LPA CTC / 1.5 Lakhs Stipend") },
-                            leadingIcon = { Icon(Icons.Default.Payments, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(12.dp),
-                            singleLine = true
-                        )
 
                         // Links input with trailing checkmark (✓) button to add as clickable pills
                         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {

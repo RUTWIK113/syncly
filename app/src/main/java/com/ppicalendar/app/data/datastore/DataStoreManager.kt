@@ -34,6 +34,7 @@ class DataStoreManager(private val context: Context) {
         val USE_AI_EXTRACTION = booleanPreferencesKey("use_ai_extraction")
         val TEST_NOTICE_COUNT = intPreferencesKey("test_notice_count")
         val DARK_THEME = booleanPreferencesKey("dark_theme_enabled")
+        val ACCESSIBILITY_ENABLED = booleanPreferencesKey("accessibility_enabled")
         val APP_OPEN_COUNT = intPreferencesKey("app_open_count")
         val LAST_RATED_APP_OPEN_COUNT = intPreferencesKey("last_rated_app_open_count")
     }
@@ -70,8 +71,13 @@ class DataStoreManager(private val context: Context) {
             isEmailVerified = prefs[PreferencesKeys.IS_EMAIL_VERIFIED] ?: false,
             geminiApiKey = prefs[PreferencesKeys.GEMINI_API_KEY] ?: "",
             useAiExtraction = prefs[PreferencesKeys.USE_AI_EXTRACTION] ?: true,
-            isDarkTheme = prefs[PreferencesKeys.DARK_THEME] ?: false
+            isDarkTheme = prefs[PreferencesKeys.DARK_THEME] ?: false,
+            accessibilityEnabled = prefs[PreferencesKeys.ACCESSIBILITY_ENABLED] ?: false
         )
+    }
+
+    suspend fun setAccessibilityEnabled(enabled: Boolean) {
+        context.dataStore.edit { it[PreferencesKeys.ACCESSIBILITY_ENABLED] = enabled }
     }
 
     suspend fun getSettings(): AppSettings = settingsFlow.first()

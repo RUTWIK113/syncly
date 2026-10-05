@@ -87,8 +87,7 @@ fun CompaniesScreen(
 
     val filteredCompanies = companies.filter {
         it.name.contains(searchQuery, ignoreCase = true) ||
-                (it.roleNames?.contains(searchQuery, ignoreCase = true) == true) ||
-                (it.payScale?.contains(searchQuery, ignoreCase = true) == true)
+                (it.roleNames?.contains(searchQuery, ignoreCase = true) == true)
     }
 
     Box(modifier = modifier.fillMaxSize()) {
@@ -515,7 +514,6 @@ fun AddPointsNoteDialog(
                     value = pointsStr,
                     onValueChange = { if (it.all { char -> char.isDigit() }) pointsStr = it },
                     label = { Text("Points Gained *") },
-                    placeholder = { Text("e.g. 5 or 10") },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(10.dp)
@@ -610,24 +608,7 @@ fun CompanyVaultCard(
                         color = MaterialTheme.colorScheme.onSurface
                     )
 
-                    if (!company.payScale.isNullOrBlank()) {
-                        Spacer(modifier = Modifier.height(2.dp))
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                imageVector = Icons.Default.Payments,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.size(14.dp)
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = company.payScale,
-                                style = MaterialTheme.typography.bodySmall,
-                                fontWeight = FontWeight.SemiBold,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
+
 
                     Spacer(modifier = Modifier.height(4.dp))
                     Row(

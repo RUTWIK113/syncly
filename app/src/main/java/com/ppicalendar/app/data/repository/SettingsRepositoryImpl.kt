@@ -66,4 +66,9 @@ class SettingsRepositoryImpl(
     override suspend fun updateUseAiExtraction(useAi: Boolean) {
         dataStoreManager.setUseAiExtraction(useAi)
     }
+
+    override suspend fun updateAccessibilityEnabled(enabled: Boolean) {
+        dataStoreManager.setAccessibilityEnabled(enabled)
+    }
+
 }

@@ -1,6 +1,7 @@
-package com.ppicalendar.app.presentation.screens
+﻿package com.ppicalendar.app.presentation.screens
 
 import android.content.Intent
+import android.provider.Settings
 import android.net.Uri
 import android.os.Build
 import androidx.compose.ui.platform.LocalContext
@@ -48,6 +49,7 @@ import androidx.compose.material.icons.filled.RadioButtonChecked
 import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material.icons.filled.RateReview
 import androidx.compose.material.icons.filled.Send
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.VerifiedUser
@@ -293,6 +295,24 @@ fun SettingsScreen(
                                 }
                             }
                         }
+                    }
+                }
+            }
+
+            item {
+                Box(modifier = Modifier.padding(horizontal = 16.dp)) {
+                    SettingsSectionCard(title = "Accessibility", icon = Icons.Default.Settings) {
+                        SettingsToggleRow(
+                            title = "WhatsApp Accessibility Capture",
+                            subtitle = "Capture WhatsApp messages while the app is open (requires Accessibility permission)",
+                            checked = liveSettings.accessibilityEnabled,
+                            onCheckedChange = { enabled ->
+                                viewModel.setAccessibilityEnabled(enabled)
+                                if (enabled) {
+                                    context.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+                                }
+                            }
+                        )
                     }
                 }
             }
