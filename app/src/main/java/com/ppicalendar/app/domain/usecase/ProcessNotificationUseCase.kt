@@ -82,7 +82,9 @@ class ProcessNotificationUseCase(
             "round", "gd", "group discussion", "deadline", "slot", "schedule", "venue"
         )
 
-        val matchesKeyword = settings.keywords.any { kw ->
+        val isManualEntry = sender == "Manual Entry"
+
+        val matchesKeyword = isManualEntry || settings.keywords.any { kw ->
             kw.isNotBlank() && (lowerText.contains(kw.lowercase()) || lowerSender.contains(kw.lowercase()))
         } || placementKeywords.any { kw ->
             lowerText.contains(kw)
@@ -93,7 +95,7 @@ class ProcessNotificationUseCase(
         }
 
         // 3c. Filter out pure casual chats, student queries, or greetings
-        val isCasualOrQuestion = lowerText.startsWith("can anyone") ||
+        val isCasualOrQuestion = !isManualEntry && (lowerText.startsWith("can anyone") ||
                 lowerText.startsWith("does anyone") ||
                 lowerText.startsWith("is anyone") ||
                 lowerText.startsWith("where is") ||
@@ -104,7 +106,7 @@ class ProcessNotificationUseCase(
                 lowerText.startsWith("thank you") ||
                 lowerText.startsWith("congrats") ||
                 lowerText.startsWith("all the best") ||
-                lowerText == "ok" || lowerText == "k" || lowerText == "yes" || lowerText == "no"
+                lowerText == "ok" || lowerText == "k" || lowerText == "yes" || lowerText == "no")
 
         if (isCasualOrQuestion) {
             return NotificationProcessOutcome.NotPlacementEvent

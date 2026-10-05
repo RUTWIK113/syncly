@@ -128,10 +128,9 @@ fun EventCard(
                     horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     if (event.status == EventStatus.CREATED_IN_CALENDAR && event.calendarEventId != null) {
-                        Icon(
-                            imageVector = Icons.Default.CheckCircle,
+                        androidx.compose.foundation.Image(
+                            painter = androidx.compose.ui.res.painterResource(id = com.ppicalendar.app.R.drawable.ic_verified_badge),
                             contentDescription = "Synced",
-                            tint = androidx.compose.ui.graphics.Color(0xFF137333),
                             modifier = Modifier.size(18.dp)
                         )
                     }

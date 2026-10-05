@@ -50,7 +50,12 @@ class RuleBasedExtractor(
 
         val eventType = detectEventType(text)
         val company = detectCompany(text)
-        val (startTime, endTime) = DateTimeParser.extractTimeRange(text)
+        var (startTime, endTime) = DateTimeParser.extractTimeRange(text)
+        
+        if (startTime.isBlank() && eventType == EventType.REGISTRATION_DEADLINE) {
+            startTime = "23:00"
+        }
+
         val rawDate = detectDateString(text)
         val resolvedDate = resolveDateUseCase.resolve(rawDate, referenceDate)
         val venue = detectVenue(text)
@@ -202,7 +207,8 @@ class RuleBasedExtractor(
             Regex("""\b((?:next\s+|this\s+|coming\s+)?(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday|mon|tue|wed|thu|fri|sat|sun))\b""", RegexOption.IGNORE_CASE),
             Regex("""\b(\d{1,2}(?:st|nd|rd|th)?\s+(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t|tember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)(?:\s+\d{4})?)\b""", RegexOption.IGNORE_CASE),
             Regex("""\b((?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t|tember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\s+\d{1,2}(?:st|nd|rd|th)?(?:,?\s+\d{4})?)\b""", RegexOption.IGNORE_CASE),
-            Regex("""\b(\d{1,2}[/\.-]\d{1,2}(?:[/\.-]\d{2,4})?)\b""")
+            Regex("""\d{1,2}[/\.-]\d{1,2}(?:[/\.-]\d{2,4})?"""),
+            Regex("""\d{4}[/\.-]\d{1,2}[/\.-]\d{1,2}""")
         )
 
         for (pattern in relativePatterns) {
