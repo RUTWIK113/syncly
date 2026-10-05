@@ -80,10 +80,10 @@ import com.ppicalendar.app.ui.theme.Gray700
 import com.ppicalendar.app.ui.theme.Gray800
 import com.ppicalendar.app.ui.theme.LightBorder
 import com.ppicalendar.app.ui.theme.PureBlack
-enum class PointsFilter {
+enum class EventTypeFilter {
     ALL,
-    POINTS_YES,
-    POINTS_NO
+    PPT,
+    OA
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -100,7 +100,7 @@ fun HomeScreen(
     val availableCalendars by viewModel.availableCalendars.collectAsState()
 
     var selectedTab by remember { mutableIntStateOf(0) }
-    var pointsFilter by remember { mutableStateOf(PointsFilter.ALL) }
+    var eventTypeFilter by remember { mutableStateOf(EventTypeFilter.ALL) }
     var eventToDelete by remember { mutableStateOf<PlacementEvent?>(null) }
     var isAccountDialogVisible by remember { mutableStateOf(false) }
     var selectedCalendarCandidate by remember { mutableStateOf<CalendarInfo?>(null) }
@@ -138,11 +138,11 @@ fun HomeScreen(
         else -> createdEvents
     }
 
-    val filteredEvents = remember(displayedEvents, pointsFilter) {
-        when (pointsFilter) {
-            PointsFilter.ALL -> displayedEvents
-            PointsFilter.POINTS_YES -> displayedEvents.filter { (it.incentivePoints ?: 0) > 0 }
-            PointsFilter.POINTS_NO -> displayedEvents.filter { (it.incentivePoints ?: 0) == 0 }
+    val filteredEvents = remember(displayedEvents, eventTypeFilter) {
+        when (eventTypeFilter) {
+            EventTypeFilter.ALL -> displayedEvents
+            EventTypeFilter.PPT -> displayedEvents.filter { it.eventType == com.ppicalendar.app.domain.model.EventType.PRE_PLACEMENT_TALK }
+            EventTypeFilter.OA -> displayedEvents.filter { it.eventType == com.ppicalendar.app.domain.model.EventType.ONLINE_ASSESSMENT }
         }
     }
 
@@ -244,22 +244,22 @@ fun HomeScreen(
                             .padding(horizontal = 16.dp),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        PointsFilter.entries.forEach { filter ->
-                            val isSelected = pointsFilter == filter
+                        EventTypeFilter.entries.forEach { filter ->
+                            val isSelected = eventTypeFilter == filter
                             val count = when (filter) {
-                                PointsFilter.ALL -> displayedEvents.size
-                                PointsFilter.POINTS_YES -> displayedEvents.count { (it.incentivePoints ?: 0) > 0 }
-                                PointsFilter.POINTS_NO -> displayedEvents.count { (it.incentivePoints ?: 0) == 0 }
+                                EventTypeFilter.ALL -> displayedEvents.size
+                                EventTypeFilter.PPT -> displayedEvents.count { it.eventType == com.ppicalendar.app.domain.model.EventType.PRE_PLACEMENT_TALK }
+                                EventTypeFilter.OA -> displayedEvents.count { it.eventType == com.ppicalendar.app.domain.model.EventType.ONLINE_ASSESSMENT }
                             }
                             FilterChip(
                                 selected = isSelected,
-                                onClick = { pointsFilter = filter },
+                                onClick = { eventTypeFilter = filter },
                                 label = {
                                     Text(
                                         text = when (filter) {
-                                            PointsFilter.ALL -> "All ($count)"
-                                            PointsFilter.POINTS_YES -> "🎯 Points = Yes ($count)"
-                                            PointsFilter.POINTS_NO -> "Points = No ($count)"
+                                            EventTypeFilter.ALL -> "All ()"
+                                            EventTypeFilter.PPT -> "PPT ()"
+                                            EventTypeFilter.OA -> "OA ()"
                                         },
                                         fontSize = 12.sp,
                                         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
@@ -316,8 +316,8 @@ fun HomeScreen(
                                     )
                                     Spacer(modifier = Modifier.height(6.dp))
                                     Text(
-                                        text = if (pointsFilter != PointsFilter.ALL)
-                                            "No events match the selected points filter."
+                                        text = if (eventTypeFilter != EventTypeFilter.ALL)
+                                            "No events match the selected event type filter."
                                         else if (selectedTab == 0)
                                             "Notices confirmed or auto-synced to your Google Calendar will appear here."
                                         else

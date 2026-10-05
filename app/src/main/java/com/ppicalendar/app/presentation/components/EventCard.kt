@@ -22,6 +22,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.LocationOn
@@ -118,21 +119,7 @@ fun EventCard(
                         )
                     }
 
-                    if (event.incentivePoints != null && event.incentivePoints > 0) {
-                        Surface(
-                            shape = RoundedCornerShape(6.dp),
-                            color = SynclyPrimaryAmber,
-                            border = BorderStroke(1.dp, SynclyBorder)
-                        ) {
-                            Text(
-                                text = "+${event.incentivePoints} PTS",
-                                style = MaterialTheme.typography.labelSmall,
-                                fontWeight = FontWeight.ExtraBold,
-                                color = PureBlack,
-                                modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
-                            )
-                        }
-                    }
+
                 }
 
                 // Right: Sync status indicator + Edit + Delete
@@ -141,19 +128,12 @@ fun EventCard(
                     horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     if (event.status == EventStatus.CREATED_IN_CALENDAR && event.calendarEventId != null) {
-                        Surface(
-                            shape = RoundedCornerShape(6.dp),
-                            color = Color(0xFFE6F4EA),
-                            border = BorderStroke(1.dp, Color(0xFFCEEAD6))
-                        ) {
-                            Text(
-                                text = "✓ Synced",
-                                color = Color(0xFF137333),
-                                style = MaterialTheme.typography.labelSmall,
-                                fontWeight = FontWeight.Bold,
-                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                            )
-                        }
+                        Icon(
+                            imageVector = Icons.Default.CheckCircle,
+                            contentDescription = "Synced",
+                            tint = androidx.compose.ui.graphics.Color(0xFF137333),
+                            modifier = Modifier.size(18.dp)
+                        )
                     }
 
                     IconButton(
@@ -189,10 +169,10 @@ fun EventCard(
             val timeDisplay = com.ppicalendar.app.data.extractor.DateTimeParser.formatIndianTimeRange(event.startTime, event.endTime)
             val venueDisplay = event.venue?.trim()
 
-            FlowRow(
+            Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 // Date
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -210,12 +190,6 @@ fun EventCard(
                         color = MaterialTheme.colorScheme.onSurface
                     )
                 }
-
-                Text(
-                    text = "•",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
 
                 // Time
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -236,12 +210,6 @@ fun EventCard(
 
                 // Venue (if present)
                 if (!venueDisplay.isNullOrBlank()) {
-                    Text(
-                        text = "•",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
                             imageVector = Icons.Default.LocationOn,
@@ -251,7 +219,7 @@ fun EventCard(
                         )
                         Spacer(modifier = Modifier.width(3.dp))
                         Text(
-                            text = venueDisplay,
+                            text = if (venueDisplay.length > 12) venueDisplay.take(10) + ".." else venueDisplay,
                             style = MaterialTheme.typography.bodySmall,
                             fontWeight = FontWeight.Medium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
