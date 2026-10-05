@@ -155,7 +155,20 @@ fun HomeScreen(
             // Sticky Top Header with Google Calendar Account Chip
             com.ppicalendar.app.presentation.components.SynclyHeader(
                 title = "Syncly",
+                isHighContrast = liveSettings.isDarkTheme,
                 actions = {
+                    androidx.compose.material3.IconButton(
+                        onClick = { viewModel.setDarkTheme(!liveSettings.isDarkTheme) },
+                        modifier = Modifier.size(36.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.AutoAwesome,
+                            contentDescription = "Toggle Contrast",
+                            tint = Color(0xFF524000),
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
                     androidx.compose.material3.Surface(
                         shape = RoundedCornerShape(20.dp),
                         color = Color(0xFFFFF0C2),

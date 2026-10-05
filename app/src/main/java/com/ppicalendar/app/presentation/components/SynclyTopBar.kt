@@ -52,9 +52,10 @@ fun SynclyHeader(
     logo: Painter? = null,
     onBackClick: (() -> Unit)? = null,
     actions: (@Composable () -> Unit)? = null,
+    isHighContrast: Boolean = false,
     modifier: Modifier = Modifier
 ) {
-    val headerBg = SynclyHeaderLight
+    val headerBg = if (isHighContrast) SynclyPrimaryAmber else SynclyHeaderLight
     val titleColor = Color(0xFF231B00)
     val subtitleColor = Color(0xFF524000).copy(alpha = 0.85f)
 
