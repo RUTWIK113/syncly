@@ -73,9 +73,10 @@ android {
     }
 
     applicationVariants.all {
+        val variant = this
         outputs.all {
             if (this is com.android.build.gradle.internal.api.BaseVariantOutputImpl) {
-                outputFileName = "syncly.apk"
+                outputFileName = "syncly_v${variant.versionName}.apk"
             }
         }
     }
