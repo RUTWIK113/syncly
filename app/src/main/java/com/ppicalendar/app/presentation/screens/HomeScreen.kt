@@ -369,7 +369,7 @@ fun HomeScreen(
                                 ) {
                                     Text("Past Events ()", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                     Icon(
-                                        imageVector = if (showPastEvents) androidx.compose.material.icons.filled.KeyboardArrowUp else androidx.compose.material.icons.filled.KeyboardArrowDown,
+                                        imageVector = if (showPastEvents) androidx.compose.material.icons.Icons.Filled.KeyboardArrowUp else androidx.compose.material.icons.Icons.Filled.KeyboardArrowDown,
                                         contentDescription = null,
                                         tint = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
