@@ -331,15 +331,38 @@ fun HomeScreen(
                         }
                     }
                 } else {
-                    items(filteredEvents, key = { it.id }) { event ->
-                        Box(modifier = Modifier.padding(horizontal = 16.dp)) {
-                            EventCard(
-                                event = event,
-                                onConfirm = { viewModel.confirmEvent(event) },
-                                onEdit = { viewModel.openEditDialog(event) },
-                                onDismiss = { viewModel.dismissEvent(event.id) },
-                                onDelete = { eventToDelete = event }
+                    // Group and sort by Date and Time
+                    val groupedEvents = filteredEvents
+                        .sortedWith(compareBy({ it.date }, { it.startTime }))
+                        .groupBy { it.date }
+
+                    groupedEvents.forEach { (dateStr, events) ->
+                        val displayDate = if (dateStr.isNotBlank()) {
+                            com.ppicalendar.app.data.extractor.DateTimeParser.formatIndianDate(dateStr)
+                        } else {
+                            "Unknown Date"
+                        }
+                        
+                        item(key = "header_$" + dateStr) {
+                            Text(
+                                text = displayDate,
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.padding(start = 16.dp, top = 8.dp, end = 16.dp, bottom = 2.dp)
                             )
+                        }
+                        
+                        items(events, key = { it.id }) { event ->
+                            Box(modifier = Modifier.padding(horizontal = 16.dp)) {
+                                EventCard(
+                                    event = event,
+                                    onConfirm = { viewModel.confirmEvent(event) },
+                                    onEdit = { viewModel.openEditDialog(event) },
+                                    onDismiss = { viewModel.dismissEvent(event.id) },
+                                    onDelete = { eventToDelete = event }
+                                )
+                            }
                         }
                     }
                 }
