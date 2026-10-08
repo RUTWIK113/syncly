@@ -1,7 +1,7 @@
 {
-  "versionCode": 15,
-  "versionName": "1.1.5",
-  "changelog": "• Fixed calendar badge alignment\n• Show exact original message on Event Card click\n• Allow duplicate events to show appropriate error message\n• Added support for extracting full raw snippet",
-  "downloadUrl": "https://rutwik113.github.io/syncly/syncly_v1.1.5.apk",
+  "versionCode": 16,
+  "versionName": "1.1.6",
+  "changelog": "• Made exact parsed message on Event Card fully scrollable",
+  "downloadUrl": "https://rutwik113.github.io/syncly/syncly_v1.1.6.apk",
   "isMandatory": false
 }
