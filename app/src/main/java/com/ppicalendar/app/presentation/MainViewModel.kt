@@ -398,6 +398,9 @@ class MainViewModel(
                 is NotificationProcessOutcome.NoKeywordMatch -> {
                     _uiEvents.emit(UiNotification("ℹ️ Message ignored: Did not match placement keywords.", isError = true))
                 }
+                is NotificationProcessOutcome.DuplicateEvent -> {
+                    _uiEvents.emit(UiNotification("⚠️ Event already exists in your calendar."))
+                }
                 is NotificationProcessOutcome.NotPlacementEvent -> {
                     _uiEvents.emit(UiNotification("ℹ️ Message classified as NOT a placement event.", isError = true))
                 }

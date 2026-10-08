@@ -14,6 +14,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarViewMonth
 import androidx.compose.material.icons.filled.Circle
 import androidx.compose.material.icons.filled.ViewAgenda
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -106,12 +108,38 @@ fun AppCalendarScreen(viewModel: MainViewModel, modifier: Modifier = Modifier) {
             ) {
                 val monthName = currentMonth.month.name.lowercase(Locale.ROOT)
                     .replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.ROOT) else it.toString() }
-                Text(
-                    text = "$monthName ${currentMonth.year}",
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = MaterialTheme.colorScheme.onBackground
-                )
+                if (isMonthView) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        IconButton(onClick = { currentMonth = currentMonth.minusMonths(1) }) {
+                            Icon(
+                                imageVector = Icons.Default.ArrowBack,
+                                contentDescription = "Previous month"
+                            )
+                        }
+                        Text(
+                            text = "$monthName ${currentMonth.year}",
+                            style = MaterialTheme.typography.headlineMedium,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = MaterialTheme.colorScheme.onBackground
+                        )
+                        IconButton(onClick = { currentMonth = currentMonth.plusMonths(1) }) {
+                            Icon(
+                                imageVector = Icons.Default.ArrowForward,
+                                contentDescription = "Next month"
+                            )
+                        }
+                    }
+                } else {
+                    Text(
+                        text = "$monthName ${currentMonth.year}",
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = MaterialTheme.colorScheme.onBackground
+                    )
+                }
                 
                 // Segmented Toggle
                 Row(
@@ -210,43 +238,50 @@ fun AppCalendarScreen(viewModel: MainViewModel, modifier: Modifier = Modifier) {
                                                 modifier = Modifier.weight(1f),
                                                 contentAlignment = Alignment.Center
                                             ) {
-                                                // Date Circle
-                                                Box(
-                                                    modifier = Modifier
-                                                        .size(36.dp)
-                                                        .clip(CircleShape)
-                                                        .background(if (isSelected) SynclyPrimaryAmber else Color.Transparent)
-                                                        .clickable { 
-                                                            selectedDate = date 
-                                                            // Removed redirection to day view as requested
-                                                        },
-                                                    contentAlignment = Alignment.Center
-                                                ) {
-                                                    Text(
-                                                        text = currentDay.toString(),
-                                                        color = if (isSelected) Color(0xFF231B00) else MaterialTheme.colorScheme.onSurface,
-                                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
-                                                    )
-                                                }
-                                                // Notification Badge
-                                                if (eventCount > 0) {
+                                                Box(modifier = Modifier.size(36.dp)) {
+                                                    // Date Circle
                                                     Box(
                                                         modifier = Modifier
-                                                            .align(Alignment.TopEnd)
-                                                            .offset(x = 2.dp, y = (-2).dp)
-                                                            .size(16.dp)
-                                                            .zIndex(1f)
+                                                            .fillMaxSize()
                                                             .clip(CircleShape)
-                                                            .background(Color(0xFF4CAF50))
-                                                            .border(1.dp, MaterialTheme.colorScheme.surface, CircleShape),
+                                                            .background(if (isSelected) SynclyPrimaryAmber else Color.Transparent)
+                                                            .clickable { 
+                                                                selectedDate = date 
+                                                                // Removed redirection to day view as requested
+                                                            },
                                                         contentAlignment = Alignment.Center
                                                     ) {
                                                         Text(
-                                                            text = eventCount.toString(),
-                                                            color = Color.White,
-                                                            fontSize = 9.sp,
-                                                            fontWeight = FontWeight.Bold
+                                                            text = currentDay.toString(),
+                                                            color = if (isSelected) Color(0xFF231B00) else MaterialTheme.colorScheme.onSurface,
+                                                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
                                                         )
+                                                    }
+                                                    // Notification Badge
+                                                    if (eventCount > 0) {
+                                                        Box(
+                                                            modifier = Modifier
+                                                                .align(Alignment.TopEnd)
+                                                                .offset(x = 6.dp, y = (-2).dp)
+                                                                .size(16.dp)
+                                                                .zIndex(1f)
+                                                                .clip(CircleShape)
+                                                                .background(Color(0xFF4CAF50))
+                                                                .border(1.dp, MaterialTheme.colorScheme.surface, CircleShape),
+                                                            contentAlignment = Alignment.Center
+                                                        ) {
+                                                            Text(
+                                                                text = eventCount.toString(),
+                                                                color = Color.White,
+                                                                fontSize = 9.sp,
+                                                                fontWeight = FontWeight.Bold,
+                                                                style = androidx.compose.ui.text.TextStyle(
+                                                                    platformStyle = androidx.compose.ui.text.PlatformTextStyle(
+                                                                        includeFontPadding = false
+                                                                    )
+                                                                )
+                                                            )
+                                                        }
                                                     }
                                                 }
                                             }

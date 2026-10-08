@@ -70,10 +70,13 @@ fun EventCard(
 ) {
     val context = LocalContext.current
     var menuExpanded by remember { mutableStateOf(false) }
+    var isExpanded by remember { mutableStateOf(false) }
     val isPending = event.status == EventStatus.PENDING_CONFIRMATION
 
     Card(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            .clickable { isExpanded = !isExpanded },
         shape = RoundedCornerShape(14.dp),
         colors = CardDefaults.cardColors(containerColor = Gray50),
         border = BorderStroke(1.dp, Gray300),
@@ -329,6 +332,24 @@ fun EventCard(
                         }
                     }
                 }
+            }
+            
+            if (isExpanded && !event.rawNotificationSnippet.isNullOrBlank()) {
+                Spacer(modifier = Modifier.height(12.dp))
+                androidx.compose.material3.Divider(color = MaterialTheme.colorScheme.outlineVariant)
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "Original Message:",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = event.rawNotificationSnippet!!,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
         }
     }
