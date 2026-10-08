@@ -1,3 +1,4 @@
+// Updated HomeScreen.kt with stray duplicate when block removed
 package com.ppicalendar.app.presentation.screens
 
 import androidx.compose.foundation.Image
@@ -83,10 +84,14 @@ import com.ppicalendar.app.ui.theme.Gray700
 import com.ppicalendar.app.ui.theme.Gray800
 import com.ppicalendar.app.ui.theme.LightBorder
 import com.ppicalendar.app.ui.theme.PureBlack
+import com.ppicalendar.app.ui.theme.SynclyPrimaryAmber
+import com.ppicalendar.app.ui.theme.SynclyPrimaryAmber
+
 enum class EventTypeFilter {
     ALL,
     PPT,
-    OA
+    OA,
+    RESUME
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -147,6 +152,7 @@ fun HomeScreen(
             EventTypeFilter.ALL -> displayedEvents
             EventTypeFilter.PPT -> displayedEvents.filter { it.eventType == com.ppicalendar.app.domain.model.EventType.PRE_PLACEMENT_TALK }
             EventTypeFilter.OA -> displayedEvents.filter { it.eventType == com.ppicalendar.app.domain.model.EventType.ONLINE_ASSESSMENT }
+            EventTypeFilter.RESUME -> displayedEvents.filter { it.eventType == com.ppicalendar.app.domain.model.EventType.RESUME_DEADLINE }
         }
     }
 
@@ -157,35 +163,26 @@ fun HomeScreen(
                 title = "Syncly",
                 isHighContrast = liveSettings.isDarkTheme,
                 actions = {
-                    androidx.compose.material3.Surface(
-                        shape = RoundedCornerShape(20.dp),
-                        color = Color(0xFFFFF0C2),
-                        border = BorderStroke(1.dp, Color(0xFFE5D5A0)),
-                        modifier = Modifier.clickable {
-                            viewModel.refreshCalendars()
-                            selectedCalendarCandidate = currentCalendar
-                            isAccountDialogVisible = true
-                        }
+                    val initial = liveSettings.connectedEmail.firstOrNull()?.uppercaseChar() ?: 'U'
+                    Box(
+                        modifier = Modifier
+                            .size(36.dp)
+                            .clip(androidx.compose.foundation.shape.CircleShape)
+                            .background(com.ppicalendar.app.ui.theme.SynclyPrimaryAmber)
+                            .border(1.dp, Color(0xFFE5D5A0), androidx.compose.foundation.shape.CircleShape)
+                            .clickable {
+                                viewModel.refreshCalendars()
+                                selectedCalendarCandidate = currentCalendar
+                                isAccountDialogVisible = true
+                            },
+                        contentAlignment = Alignment.Center
                     ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.CalendarMonth,
-                                contentDescription = "Google Calendar Account",
-                                tint = Color(0xFF524000),
-                                modifier = Modifier.size(14.dp)
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            androidx.compose.material3.Text(
-                                text = if (connectedEmail.isNotBlank()) formatMaskedEmail(connectedEmail) else "Connect Cal",
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFF3B2E00),
-                                maxLines = 1
-                            )
-                        }
+                        Text(
+                            text = initial.toString(),
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF231B00),
+                            fontSize = 18.sp
+                        )
                     }
                 }
             )
@@ -255,6 +252,7 @@ fun HomeScreen(
                                 EventTypeFilter.ALL -> displayedEvents.size
                                 EventTypeFilter.PPT -> displayedEvents.count { it.eventType == com.ppicalendar.app.domain.model.EventType.PRE_PLACEMENT_TALK }
                                 EventTypeFilter.OA -> displayedEvents.count { it.eventType == com.ppicalendar.app.domain.model.EventType.ONLINE_ASSESSMENT }
+                                EventTypeFilter.RESUME -> displayedEvents.count { it.eventType == com.ppicalendar.app.domain.model.EventType.RESUME_DEADLINE }
                             }
                             FilterChip(
                                 selected = isSelected,
@@ -262,9 +260,10 @@ fun HomeScreen(
                                 label = {
                                     Text(
                                         text = when (filter) {
-                                            EventTypeFilter.ALL -> "All ()"
-                                            EventTypeFilter.PPT -> "PPT ()"
-                                            EventTypeFilter.OA -> "OA ()"
+                                            EventTypeFilter.ALL -> "All"
+                                            EventTypeFilter.PPT -> "PPT"
+                                            EventTypeFilter.OA -> "OA"
+                                            EventTypeFilter.RESUME -> "Resume"
                                         },
                                         fontSize = 12.sp,
                                         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
@@ -337,7 +336,7 @@ fun HomeScreen(
                     }
                 } else {
                     val currentDateTime = java.time.LocalDateTime.now()
-                    
+
                     val (pastEvents, upcomingEvents) = filteredEvents.partition { event ->
                         if (event.date.isNotBlank() && event.startTime.isNotBlank()) {
                             try {
@@ -351,7 +350,7 @@ fun HomeScreen(
                             false
                         }
                     }
-                    
+
                     // 1. Past Events Bar
                     if (pastEvents.isNotEmpty()) {
                         item {
@@ -360,7 +359,7 @@ fun HomeScreen(
                                     .fillMaxWidth()
                                     .padding(horizontal = 16.dp, vertical = 8.dp)
                                     .clickable { showPastEvents = !showPastEvents },
-                                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                                color = com.ppicalendar.app.ui.theme.SynclyPrimaryAmber,
                                 shape = RoundedCornerShape(12.dp)
                             ) {
                                 Row(
@@ -368,11 +367,11 @@ fun HomeScreen(
                                     horizontalArrangement = Arrangement.SpaceBetween,
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Text("Past Events ()", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    Text("Past Events (${pastEvents.size})", fontWeight = FontWeight.Bold, color = com.ppicalendar.app.ui.theme.PureBlack)
                                     Icon(
                                         imageVector = if (showPastEvents) androidx.compose.material.icons.Icons.Filled.KeyboardArrowUp else androidx.compose.material.icons.Icons.Filled.KeyboardArrowDown,
                                         contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                        tint = com.ppicalendar.app.ui.theme.PureBlack
                                     )
                                 }
                             }
@@ -384,7 +383,7 @@ fun HomeScreen(
                                 val displayDate = if (dateStr.isNotBlank()) {
                                     com.ppicalendar.app.data.extractor.DateTimeParser.formatIndianDate(dateStr)
                                 } else "Unknown Date"
-                                
+
                                 item(key = "past_header_" + dateStr) {
                                     Text(
                                         text = displayDate,
@@ -394,14 +393,14 @@ fun HomeScreen(
                                         modifier = Modifier.padding(start = 16.dp, top = 8.dp, end = 16.dp, bottom = 2.dp)
                                     )
                                 }
-                                
+
                                 items(events, key = { it.id }) { event ->
                                     Box(modifier = Modifier.padding(horizontal = 16.dp).alpha(0.5f)) {
                                         EventCard(
                                             event = event,
                                             onConfirm = { viewModel.confirmEvent(event) },
                                             onEdit = { viewModel.openEditDialog(event) },
-                                            onDismiss = { viewModel.dismissEvent(event.id) },
+                                            onDismiss = { viewModel.deleteEvent(event.id) },
                                             onDelete = { eventToDelete = event }
                                         )
                                     }
@@ -418,7 +417,7 @@ fun HomeScreen(
                         } else {
                             "Unknown Date"
                         }
-                        
+
                         item(key = "header_" + dateStr) {
                             Text(
                                 text = displayDate,
@@ -428,14 +427,14 @@ fun HomeScreen(
                                 modifier = Modifier.padding(start = 16.dp, top = 8.dp, end = 16.dp, bottom = 2.dp)
                             )
                         }
-                        
+
                         items(events, key = { it.id }) { event ->
                             Box(modifier = Modifier.padding(horizontal = 16.dp)) {
                                 EventCard(
                                     event = event,
                                     onConfirm = { viewModel.confirmEvent(event) },
                                     onEdit = { viewModel.openEditDialog(event) },
-                                    onDismiss = { viewModel.dismissEvent(event.id) },
+                                    onDismiss = { viewModel.deleteEvent(event.id) },
                                     onDelete = { eventToDelete = event }
                                 )
                             }
@@ -494,114 +493,20 @@ fun HomeScreen(
         }
 
         // Google Calendar Account Picker Dialog
-        if (isAccountDialogVisible) {
-            androidx.compose.material3.AlertDialog(
-                onDismissRequest = { isAccountDialogVisible = false },
-                title = {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = Icons.Default.CalendarMonth,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(24.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Google Calendar Account", fontWeight = FontWeight.Bold)
-                    }
-                },
-                text = {
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text(
-                            text = "Choose Google account for automatically syncing placement schedules & reminders:",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-
-                        Spacer(modifier = Modifier.height(6.dp))
-
-                        if (availableCalendars.isEmpty()) {
-                            Text(
-                                text = "No calendar accounts detected. Ensure Calendar permission is granted in Access tab.",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.error
-                            )
-                        } else {
-                            availableCalendars.forEach { cal ->
-                                val isSelected = (selectedCalendarCandidate?.id == cal.id) ||
-                                        (selectedCalendarCandidate == null && cal.id == currentCalendar?.id)
-
-                                Card(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clickable { selectedCalendarCandidate = cal },
-                                    shape = RoundedCornerShape(10.dp),
-                                    colors = CardDefaults.cardColors(
-                                        containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface
-                                    ),
-                                    border = BorderStroke(
-                                        1.dp,
-                                        if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
-                                    )
-                                ) {
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(12.dp),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Icon(
-                                            imageVector = if (isSelected) Icons.Default.RadioButtonChecked else Icons.Default.RadioButtonUnchecked,
-                                            contentDescription = null,
-                                            tint = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                                            modifier = Modifier.size(20.dp)
-                                        )
-
-                                        Spacer(modifier = Modifier.width(10.dp))
-
-                                        Column(modifier = Modifier.weight(1f)) {
-                                            Text(
-                                                text = cal.accountName,
-                                                style = MaterialTheme.typography.bodyMedium,
-                                                fontWeight = FontWeight.Bold,
-                                                color = MaterialTheme.colorScheme.onSurface
-                                            )
-                                            Text(
-                                                text = cal.displayName + if (cal.isPrimary) " (Primary)" else "",
-                                                style = MaterialTheme.typography.bodySmall,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                },
-                confirmButton = {
-                    Button(
-                        onClick = {
-                            selectedCalendarCandidate?.let {
-                                viewModel.confirmCalendarConnection(it)
-                            }
-                            isAccountDialogVisible = false
-                        },
-                        enabled = selectedCalendarCandidate != null || availableCalendars.isNotEmpty(),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primary,
-                            contentColor = MaterialTheme.colorScheme.onPrimary
-                        )
-                    ) {
-                        Text("Confirm & Sync", fontWeight = FontWeight.Bold)
-                    }
-                },
-                dismissButton = {
-                    androidx.compose.material3.TextButton(onClick = { isAccountDialogVisible = false }) {
-                        Text("Cancel")
-                    }
-                },
-                shape = RoundedCornerShape(16.dp)
-            )
-        }
+        com.ppicalendar.app.presentation.components.AccountSelectionDialog(
+            isVisible = isAccountDialogVisible,
+            onDismiss = { isAccountDialogVisible = false },
+            availableCalendars = availableCalendars,
+            selectedCalendarCandidate = selectedCalendarCandidate,
+            currentCalendar = currentCalendar,
+            onCalendarSelect = { selectedCalendarCandidate = it },
+            onConfirm = {
+                selectedCalendarCandidate?.let {
+                    viewModel.confirmCalendarConnection(it)
+                }
+                isAccountDialogVisible = false
+            }
+        )
 
         // Floating Action Button for manual entry
         androidx.compose.material3.FloatingActionButton(

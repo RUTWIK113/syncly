@@ -28,7 +28,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import com.ppicalendar.app.ui.theme.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -61,13 +60,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.InputChip
 import androidx.compose.material3.InputChipDefaults
@@ -149,11 +142,11 @@ fun SettingsScreen(
 
     val isAccountConnected = connectedEmail.isNotBlank() || currentCalendar != null
 
-    Box(modifier = modifier.fillMaxSize().background(Gray100)) {
+    Box(modifier = modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
             // Sticky Top Yellow/Themed Header Bar
             com.ppicalendar.app.presentation.components.SynclyHeader(
-                title = "Settings",
+                title = "Preferences",
                 subtitle = "Configure WhatsApp detection rules, Google account, and display theme."
             )
 
@@ -167,110 +160,8 @@ fun SettingsScreen(
                 // Section 1: Google Calendar & Permanent Email Connection Card
             item {
                 Box(modifier = Modifier.padding(horizontal = 16.dp)) {
-                    SettingsSectionCard(title = "AI Extraction Engine", icon = Icons.Default.AutoAwesome) {
-                        SettingsToggleRow(
-                            title = "Enable Gemini AI Extractor",
-                            subtitle = "Use Gemini Flash with offline heuristic fallback",
-                            checked = liveSettings.useAiExtraction,
-                            onCheckedChange = {
-                                viewModel.setUseAiExtraction(it)
-                                triggerAutoSaveIndicator()
-                            }
-                        )
-
-                        if (liveSettings.useAiExtraction) {
-                            Spacer(modifier = Modifier.height(12.dp))
-
-                            OutlinedTextField(
-                                value = liveSettings.geminiApiKey,
-                                onValueChange = {
-                                    viewModel.setGeminiApiKey(it)
-                                    triggerAutoSaveIndicator()
-                                },
-                                label = { Text("Google Gemini API Key (Optional)") },
-                                placeholder = { Text("AIzaSy...") },
-                                visualTransformation = if (showApiKey) VisualTransformation.None else PasswordVisualTransformation(),
-                                trailingIcon = {
-                                    IconButton(onClick = { showApiKey = !showApiKey }) {
-                                        Icon(Icons.Default.Key, contentDescription = "Toggle key")
-                                    }
-                                },
-                                modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(12.dp),
-                                singleLine = true
-                            )
-
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                text = "Leave empty to use built-in offline Regex & Campus heuristics (100% offline & private).",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-                }
-            }
-
-            item {
-                Box(modifier = Modifier.padding(horizontal = 16.dp)) {
-                    SettingsSectionCard(title = "Access & Permissions", icon = Icons.Default.VerifiedUser) {
-                        
-                        SettingsToggleRow(
-                            title = "Notification Listener",
-                            subtitle = "Allow Syncly to read incoming notifications",
-                            checked = androidx.core.app.NotificationManagerCompat.getEnabledListenerPackages(context).contains(context.packageName),
-                            onCheckedChange = {
-                                context.startActivity(android.content.Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS"))
-                            }
-                        )
-
-                        Spacer(modifier = Modifier.height(12.dp))
-                        androidx.compose.material3.HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        SettingsToggleRow(
-                            title = "Google Calendar Integration",
-                            subtitle = "Sync schedules directly to Google Calendar",
-                            checked = liveSettings.googleCalendarIntegrationEnabled,
-                            onCheckedChange = {
-                                viewModel.setGoogleCalendarIntegrationEnabled(it)
-                            }
-                        )
-
-                        if (liveSettings.googleCalendarIntegrationEnabled) {
-                            Spacer(modifier = Modifier.height(12.dp))
-                            
-                            var expandedSyncMode by remember { mutableStateOf(false) }
-                            Box(modifier = Modifier.fillMaxWidth()) {
-                                OutlinedButton(
-                                    onClick = { expandedSyncMode = true },
-                                    modifier = Modifier.fillMaxWidth()
-                                ) {
-                                    Text("Sync Mode: ${liveSettings.googleCalendarSyncMode}")
-                                }
-                                androidx.compose.material3.DropdownMenu(
-                                    expanded = expandedSyncMode,
-                                    onDismissRequest = { expandedSyncMode = false }
-                                ) {
-                                    androidx.compose.material3.DropdownMenuItem(
-                                        text = { Text("Auto") },
-                                        onClick = {
-                                            viewModel.setGoogleCalendarSyncMode("Auto")
-                                            expandedSyncMode = false
-                                        }
-                                    )
-                                    androidx.compose.material3.DropdownMenuItem(
-                                        text = { Text("Manual") },
-                                        onClick = {
-                                            viewModel.setGoogleCalendarSyncMode("Manual")
-                                            expandedSyncMode = false
-                                        }
-                                    )
-                                }
-                            }
-                            
-                            Spacer(modifier = Modifier.height(16.dp))
-Text(
+                    SettingsSectionCard(title = "Google Calendar Connection", icon = Icons.Default.Email) {
+                        Text(
                             text = "Permanent Google/Campus Mail Account where events & 60-min advance reminders are automatically synced:",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -404,13 +295,30 @@ Text(
                                 }
                             }
                         }
-                    
-                        }
                     }
                 }
             }
 
-item {
+            item {
+                Box(modifier = Modifier.padding(horizontal = 16.dp)) {
+                    SettingsSectionCard(title = "Accessibility", icon = Icons.Default.Settings) {
+                        SettingsToggleRow(
+                            title = "WhatsApp Accessibility Capture",
+                            subtitle = "Capture WhatsApp messages while the app is open (requires Accessibility permission)",
+                            checked = liveSettings.accessibilityEnabled,
+                            onCheckedChange = { enabled ->
+                                viewModel.setAccessibilityEnabled(enabled)
+                                if (enabled) {
+                                    context.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+                                }
+                            }
+                        )
+                    }
+                }
+            }
+
+            // Section 2: Automation Rules
+            item {
                 Box(modifier = Modifier.padding(horizontal = 16.dp)) {
                     SettingsSectionCard(title = "Automation Rules", icon = Icons.Default.Tune) {
                         SettingsToggleRow(
@@ -462,7 +370,8 @@ item {
                 }
             }
 
-item {
+            // Section 3: Placement Filter Keywords
+            item {
                 Box(modifier = Modifier.padding(horizontal = 16.dp)) {
                     SettingsSectionCard(title = "Detection Keywords", icon = Icons.Default.NotificationsActive) {
                         Text(
@@ -553,25 +462,55 @@ item {
                 }
             }
 
-item {
+            // Section 4: AI Extraction Engine (Gemini)
+            item {
                 Box(modifier = Modifier.padding(horizontal = 16.dp)) {
-                    SettingsSectionCard(title = "Accessibility", icon = Icons.Default.Settings) {
+                    SettingsSectionCard(title = "AI Extraction Engine", icon = Icons.Default.AutoAwesome) {
                         SettingsToggleRow(
-                            title = "WhatsApp Accessibility Capture",
-                            subtitle = "Capture WhatsApp messages while the app is open (requires Accessibility permission)",
-                            checked = liveSettings.accessibilityEnabled,
-                            onCheckedChange = { enabled ->
-                                viewModel.setAccessibilityEnabled(enabled)
-                                if (enabled) {
-                                    context.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
-                                }
+                            title = "Enable Gemini AI Extractor",
+                            subtitle = "Use Gemini Flash with offline heuristic fallback",
+                            checked = liveSettings.useAiExtraction,
+                            onCheckedChange = {
+                                viewModel.setUseAiExtraction(it)
+                                triggerAutoSaveIndicator()
                             }
                         )
+
+                        if (liveSettings.useAiExtraction) {
+                            Spacer(modifier = Modifier.height(12.dp))
+
+                            OutlinedTextField(
+                                value = liveSettings.geminiApiKey,
+                                onValueChange = {
+                                    viewModel.setGeminiApiKey(it)
+                                    triggerAutoSaveIndicator()
+                                },
+                                label = { Text("Google Gemini API Key (Optional)") },
+                                placeholder = { Text("AIzaSy...") },
+                                visualTransformation = if (showApiKey) VisualTransformation.None else PasswordVisualTransformation(),
+                                trailingIcon = {
+                                    IconButton(onClick = { showApiKey = !showApiKey }) {
+                                        Icon(Icons.Default.Key, contentDescription = "Toggle key")
+                                    }
+                                },
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(12.dp),
+                                singleLine = true
+                            )
+
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = "Leave empty to use built-in offline Regex & Campus heuristics (100% offline & private).",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
                 }
             }
 
-item {
+            // Section 5: Report Flaws, Feedback & Development Suggestions
+            item {
                 Box(modifier = Modifier.padding(horizontal = 16.dp)) {
                     SettingsSectionCard(title = "Feedback & Bug Report", icon = Icons.Default.RateReview) {
                         Text(
@@ -657,7 +596,8 @@ item {
                 }
             }
 
-item {
+            // In-App Updates Card
+            item {
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -705,10 +645,11 @@ item {
                 }
             }
 
-item {
+            // Trademark Footer: Crafted by Rutwik
+            item {
                 com.ppicalendar.app.presentation.components.SynclyFooter()
             }
-            }
+        }
     }
 
     // Floating Auto-Save Notification Toast

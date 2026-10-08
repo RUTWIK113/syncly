@@ -24,6 +24,11 @@ class PlacementEventRepositoryImpl(
         }
     }
 
+    override suspend fun getAllEventsImmediate(): List<PlacementEvent> {
+        return dao.getAllEventsImmediate().map { it.toDomain() }
+    }
+
+
     override suspend fun getEventById(id: Long): PlacementEvent? {
         return dao.getEventById(id)?.toDomain()
     }

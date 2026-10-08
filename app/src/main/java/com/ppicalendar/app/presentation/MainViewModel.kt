@@ -245,11 +245,34 @@ class MainViewModel(
 
     fun saveEditedEvent(event: PlacementEvent, createImmediately: Boolean = false) {
         viewModelScope.launch {
+            // Fetch old event to check if company name changed
+            val oldEvent = container.placementEventRepository.getEventById(event.id)
+            
             container.placementEventRepository.updateEvent(event)
             _selectedEventForEdit.value = null
+            
+            if (event.date.isNotBlank() && event.startTime.isNotBlank()) {
+                container.notificationHelper.scheduleEventReminder(event)
+            }
 
-            // Auto-store company into vault
-            container.companyRepository.getOrCreateCompanyByName(event.company)
+            // Reflect company name change in the Vault and cascade to other events
+            if (oldEvent != null && oldEvent.company != event.company) {
+                val oldCompanyProfile = container.companyRepository.getCompanyByName(oldEvent.company)
+                if (oldCompanyProfile != null) {
+                    // Update Vault company name
+                    container.companyRepository.insertOrUpdateCompany(oldCompanyProfile.copy(name = event.company))
+                    
+                    // Cascade company name change to all other events for this company
+                    val allEvents = container.placementEventRepository.getAllEventsImmediate()
+                    allEvents.filter { it.company == oldEvent.company }.forEach { 
+                        container.placementEventRepository.updateEvent(it.copy(company = event.company))
+                    }
+                } else {
+                    container.companyRepository.getOrCreateCompanyByName(event.company)
+                }
+            } else {
+                container.companyRepository.getOrCreateCompanyByName(event.company)
+            }
 
             if (createImmediately) {
                 confirmEvent(event)
@@ -351,11 +374,15 @@ class MainViewModel(
                 notificationKey = testKey,
                 sender = sender,
                 text = message,
-                referenceDate = LocalDate.now()
+                referenceDate = LocalDate.now(),
+                forceParse = true
             )
 
             _isSimulating.value = false
             when (outcome) {
+            is NotificationProcessOutcome.MultipleProcessed -> {
+                _uiEvents.emit(UiNotification("🎯 Processed multiple events! Created: ${outcome.created}, Pending: ${outcome.requiredConfirmation}"))
+            }
                 is NotificationProcessOutcome.CreatedAutomatically -> {
                     container.companyRepository.getOrCreateCompanyByName(outcome.event.company)
                     _uiEvents.emit(UiNotification("🎯 Event detected & created: ${outcome.event.formattedTitle}"))
@@ -475,6 +502,14 @@ class MainViewModel(
 
     fun setDarkTheme(isDark: Boolean) = viewModelScope.launch {
         container.dataStoreManager.setDarkTheme(isDark)
+    }
+
+    fun setGoogleCalendarIntegrationEnabled(enabled: Boolean) = viewModelScope.launch {
+        container.dataStoreManager.setGoogleCalendarIntegrationEnabled(enabled)
+    }
+
+    fun setGoogleCalendarSyncMode(mode: String) = viewModelScope.launch {
+        container.dataStoreManager.setGoogleCalendarSyncMode(mode)
     }
 
     fun addIncentivePoint(title: String, points: Int, date: String = "", note: String? = null) = viewModelScope.launch {

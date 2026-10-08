@@ -1,4 +1,4 @@
-package com.ppicalendar.app.domain.repository
+﻿package com.ppicalendar.app.domain.repository
 
 import com.ppicalendar.app.domain.model.ExtractionResult
 import java.time.LocalDate
@@ -9,5 +9,5 @@ interface EventExtractor {
         referenceDate: LocalDate = LocalDate.now(),
         apiKey: String = "",
         forcePlacement: Boolean = false
-    ): ExtractionResult
+    ): List<ExtractionResult>
 }

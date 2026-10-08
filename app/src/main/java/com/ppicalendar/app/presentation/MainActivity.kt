@@ -36,6 +36,7 @@ import androidx.compose.material.icons.filled.Business
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -77,15 +78,17 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.text.TextStyle
 import com.ppicalendar.app.presentation.screens.SettingsScreen
+import com.ppicalendar.app.presentation.screens.AppCalendarScreen
+import com.ppicalendar.app.presentation.screens.AppCalendarScreen
 import com.ppicalendar.app.ui.theme.PPICalendarTheme
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 
 enum class Screen(val title: String, val icon: ImageVector) {
     HOME("Home", Icons.Default.Home),
+    CALENDAR("Calendar", Icons.Default.CalendarMonth),
     COMPANIES("Vault", Icons.Default.Business),
-    SETTINGS("Settings", Icons.Default.Settings),
-    PERMISSIONS("Access", Icons.Default.Security)
+    SETTINGS("Settings", Icons.Default.Settings)
 }
 
 class MainActivity : ComponentActivity() {
@@ -199,7 +202,7 @@ fun SynclySplashScreen() {
 @Composable
 fun MainAppContent(viewModel: MainViewModel) {
     var selectedScreenIndex by remember { mutableIntStateOf(0) }
-    val screens = listOf(Screen.HOME, Screen.COMPANIES, Screen.SETTINGS, Screen.PERMISSIONS)
+    val screens = listOf(Screen.HOME, Screen.CALENDAR, Screen.COMPANIES, Screen.SETTINGS)
 
     val snackbarHostState = remember { SnackbarHostState() }
 
@@ -303,9 +306,9 @@ fun MainAppContent(viewModel: MainViewModel) {
                         viewModel = viewModel,
                         onNavigateToPermissions = { selectedScreenIndex = 3 }
                     )
-                    1 -> CompaniesScreen(viewModel = viewModel)
-                    2 -> SettingsScreen(viewModel = viewModel)
-                    3 -> PermissionsScreen(viewModel = viewModel)
+                    1 -> AppCalendarScreen(viewModel = viewModel)
+                    2 -> CompaniesScreen(viewModel = viewModel)
+                    3 -> SettingsScreen(viewModel = viewModel)
                 }
             }
         }

@@ -114,8 +114,11 @@ fun CompanyDetailScreen(
         }
         return if (list.isNotEmpty()) list.joinToString("\n") else null
     }
+
+    var isAddingTextNote by remember { mutableStateOf(false) }
+    var noteTitleInput by remember { mutableStateOf("") }
+    var noteContentInput by remember { mutableStateOf("") }
     var showDeleteConfirm by remember { mutableStateOf(false) }
-    var showAddEventDialog by remember { mutableStateOf(false) }
 
     // PDF Picker Launcher
     val pdfPickerLauncher = rememberLauncherForActivityResult(
@@ -459,7 +462,36 @@ fun CompanyDetailScreen(
                                     }
                                 }
 
-
+                                Surface(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .clip(RoundedCornerShape(12.dp))
+                                        .clickable { isAddingTextNote = true },
+                                    shape = RoundedCornerShape(12.dp),
+                                    color = MaterialTheme.colorScheme.primaryContainer,
+                                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(vertical = 10.dp, horizontal = 6.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.Center
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.NoteAdd,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(16.dp),
+                                            tint = MaterialTheme.colorScheme.primary
+                                        )
+                                        Spacer(modifier = Modifier.width(5.dp))
+                                        Text(
+                                            text = "Note",
+                                            style = MaterialTheme.typography.labelMedium,
+                                            fontWeight = FontWeight.Bold,
+                                            maxLines = 1,
+                                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                                        )
+                                    }
+                                }
                             }
 
                             Spacer(modifier = Modifier.height(14.dp))
@@ -524,31 +556,20 @@ fun CompanyDetailScreen(
                                 .padding(18.dp),
                             verticalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(
-                                        imageVector = Icons.Default.CalendarMonth,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.primary,
-                                        modifier = Modifier.size(20.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text(
-                                        text = "Scheduled Events (${companyEvents.size})",
-                                        style = MaterialTheme.typography.titleMedium,
-                                        fontWeight = FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.onSurface
-                                    )
-                                }
-                                TextButton(onClick = { showAddEventDialog = true }) {
-                                    Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
-                                    Spacer(modifier = Modifier.width(4.dp))
-                                    Text("Add Event")
-                                }
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector = Icons.Default.CalendarMonth,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = "Scheduled Placement Events (${companyEvents.size})",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
                             }
 
                             companyEvents.forEach { event ->
@@ -596,44 +617,6 @@ fun CompanyDetailScreen(
                 }
             }
 
-            // Applied Status Buttons
-            if (company.id != 0L) {
-                item {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        OutlinedButton(
-                            onClick = {
-                                viewModel.saveCompanyProfile(company.copy(applied = true))
-                            },
-                            modifier = Modifier.weight(1f).height(50.dp),
-                            shape = RoundedCornerShape(12.dp),
-                            colors = ButtonDefaults.outlinedButtonColors(
-                                containerColor = if (company.applied == true) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
-                                contentColor = if (company.applied == true) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.primary
-                            )
-                        ) {
-                            Text("Applied", fontWeight = FontWeight.Bold)
-                        }
-                        
-                        OutlinedButton(
-                            onClick = {
-                                viewModel.saveCompanyProfile(company.copy(applied = false))
-                            },
-                            modifier = Modifier.weight(1f).height(50.dp),
-                            shape = RoundedCornerShape(12.dp),
-                            colors = ButtonDefaults.outlinedButtonColors(
-                                containerColor = if (company.applied == false) AccentRedBadge.copy(alpha = 0.1f) else Color.Transparent,
-                                contentColor = if (company.applied == false) AccentRedBadge else MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        ) {
-                            Text("Not Applied", fontWeight = FontWeight.Bold)
-                        }
-                    }
-                }
-            }
-
             // Delete Company Button (Bottom Most)
             if (company.id != 0L) {
                 item {
@@ -667,6 +650,63 @@ fun CompanyDetailScreen(
         }
     }
 
+    // Sub-dialog to add text note
+    if (isAddingTextNote) {
+        AlertDialog(
+            onDismissRequest = { isAddingTextNote = false },
+            title = { Text("Add Text Note", fontWeight = FontWeight.Bold) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedTextField(
+                        value = noteTitleInput,
+                        onValueChange = { noteTitleInput = it },
+                        label = { Text("Note Title") },
+                        placeholder = { Text("e.g. Round 1 Questions, CTC Breakdown") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
+                    )
+                    OutlinedTextField(
+                        value = noteContentInput,
+                        onValueChange = { noteContentInput = it },
+                        label = { Text("Content") },
+                        modifier = Modifier.fillMaxWidth(),
+                        minLines = 4
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        if (noteTitleInput.isNotBlank() || noteContentInput.isNotBlank()) {
+                            viewModel.addCompanyAttachment(
+                                company.id,
+                                noteTitleInput.ifBlank { "Note" },
+                                null,
+                                noteContentInput,
+                                AttachmentType.NOTE,
+                                "Text Note"
+                            )
+                            noteTitleInput = ""
+                            noteContentInput = ""
+                            isAddingTextNote = false
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary
+                    )
+                ) {
+                    Text("Add Note", fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { isAddingTextNote = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
     // Delete Confirmation Dialog
     if (showDeleteConfirm) {
         AlertDialog(
@@ -691,17 +731,6 @@ fun CompanyDetailScreen(
                 TextButton(onClick = { showDeleteConfirm = false }) {
                     Text("Cancel")
                 }
-            }
-        )
-    }
-
-    if (showAddEventDialog) {
-        AddEventDialog(
-            companyName = company.name,
-            onDismiss = { showAddEventDialog = false },
-            onAdd = { event ->
-                viewModel.saveEditedEvent(event, createImmediately = true)
-                showAddEventDialog = false
             }
         )
     }

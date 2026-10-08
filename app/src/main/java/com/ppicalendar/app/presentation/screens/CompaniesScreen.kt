@@ -61,6 +61,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.shape.CircleShape
 import com.ppicalendar.app.domain.model.CompanyProfile
 import com.ppicalendar.app.domain.model.IncentivePoint
 import com.ppicalendar.app.presentation.MainViewModel
@@ -80,6 +85,12 @@ fun CompaniesScreen(
     val userPoints by viewModel.userPoints.collectAsState()
 
     var selectedTab by remember { mutableIntStateOf(0) }
+    val settings by viewModel.settings.collectAsState()
+    val availableCalendars by viewModel.availableCalendars.collectAsState()
+    var isAccountDialogVisible by remember { mutableStateOf(false) }
+    var selectedCalendarCandidate by remember { mutableStateOf<com.ppicalendar.app.domain.model.CalendarInfo?>(null) }
+    val currentCalendar = availableCalendars.find { it.id == settings.selectedCalendarId }
+
     var searchQuery by remember { mutableStateOf("") }
     var isAddPointsDialogOpen by remember { mutableStateOf(false) }
 
@@ -95,7 +106,31 @@ fun CompaniesScreen(
             // Sticky Header
             com.ppicalendar.app.presentation.components.SynclyHeader(
                 title = "Placement Vault",
-                subtitle = "Companies dossiers, JD documents, notes & incentive points tracker."
+                subtitle = "Companies dossiers, JD documents, notes & incentive points tracker.",
+                isHighContrast = settings.isDarkTheme,
+                actions = {
+                    val initial = settings.connectedEmail.firstOrNull()?.uppercaseChar() ?: 'U'
+                    Box(
+                        modifier = Modifier
+                            .size(36.dp)
+                            .clip(CircleShape)
+                            .background(com.ppicalendar.app.ui.theme.SynclyPrimaryAmber)
+                            .border(1.dp, Color(0xFFE5D5A0), CircleShape)
+                            .clickable {
+                                viewModel.refreshCalendars()
+                                selectedCalendarCandidate = currentCalendar
+                                isAccountDialogVisible = true
+                            },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = initial.toString(),
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF231B00),
+                            fontSize = 18.sp
+                        )
+                    }
+                }
             )
 
             // Two Tabs: Companies & Points

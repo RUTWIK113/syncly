@@ -105,6 +105,9 @@ class WhatsAppNotificationListenerService : NotificationListenerService() {
                 )
 
                 when (outcome) {
+                    is NotificationProcessOutcome.MultipleProcessed -> {
+                        Log.i(TAG, "Multiple events processed: ${outcome.created} created, ${outcome.requiredConfirmation} pending.")
+                    }
                     is NotificationProcessOutcome.CreatedAutomatically -> {
                         Log.i(TAG, "Event automatically created for ${outcome.event.company}")
                         container.notificationHelper.showEventCreatedNotification(outcome.event)

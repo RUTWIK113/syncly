@@ -1,5 +1,6 @@
-package com.ppicalendar.app.domain.usecase
+﻿package com.ppicalendar.app.domain.usecase
 
+import com.ppicalendar.app.data.notification.NotificationHelper
 import com.ppicalendar.app.domain.model.EventStatus
 import com.ppicalendar.app.domain.model.EventType
 import com.ppicalendar.app.domain.model.PlacementEvent
@@ -14,6 +15,7 @@ sealed class NotificationProcessOutcome {
     object AlreadyProcessed : NotificationProcessOutcome()
     object NoKeywordMatch : NotificationProcessOutcome()
     object NotPlacementEvent : NotificationProcessOutcome()
+    data class MultipleProcessed(val created: Int, val requiredConfirmation: Int, val missingInfo: Int) : NotificationProcessOutcome()
     data class CreatedAutomatically(val event: PlacementEvent, val calendarEventId: Long) : NotificationProcessOutcome()
     data class ConfirmationRequired(val event: PlacementEvent) : NotificationProcessOutcome()
     data class MissingEssentialInfo(val event: PlacementEvent) : NotificationProcessOutcome()
@@ -27,191 +29,166 @@ class ProcessNotificationUseCase(
     private val extractPlacementEventUseCase: ExtractPlacementEventUseCase,
     private val resolveDateUseCase: ResolveDateUseCase,
     private val createCalendarEventUseCase: CreateCalendarEventUseCase,
-    private val companyRepository: CompanyRepository
+    private val companyRepository: CompanyRepository,
+    private val notificationHelper: NotificationHelper
 ) {
     suspend operator fun invoke(
         notificationKey: String,
         sender: String,
         text: String,
-        referenceDate: LocalDate = LocalDate.now()
+        referenceDate: LocalDate = LocalDate.now(),
+        forceParse: Boolean = false
     ): NotificationProcessOutcome {
         val settings = settingsRepository.getSettings()
 
-        // 1. Check if processing is globally enabled
-        if (!settings.notificationProcessingEnabled) {
-            return NotificationProcessOutcome.Disabled
-        }
+        if (!settings.notificationProcessingEnabled) return NotificationProcessOutcome.Disabled
+        if (processedNotificationRepository.isNotificationProcessed(notificationKey)) return NotificationProcessOutcome.AlreadyProcessed
 
-        // 2. Check if this notification was already processed
-        if (processedNotificationRepository.isNotificationProcessed(notificationKey)) {
-            return NotificationProcessOutcome.AlreadyProcessed
-        }
-
-        // Mark as processed immediately to prevent duplicate concurrent runs
         processedNotificationRepository.markNotificationProcessed(notificationKey, sender)
 
-        // 3. Strict whitelisted placement sources filtering
         val lowerText = text.lowercase()
         val lowerSender = sender.lowercase()
 
-        val trustedSources = listOf(
-            "computer center",
-            "computer centre",
-            "computer centere",
-            "ug mechanical",
-            "mechanical 2026",
-            "student announcements",
-            "students announcements",
-            "me ug placements",
-            "rutwik"
-        )
+        val trustedSources = listOf("computer center", "computer centre", "computer centere", "ug mechanical", "mechanical 2026", "student announcements", "students announcements", "me ug placements", "rutwik")
+        val isTrustedSource = forceParse || sender == "Manual Entry" || trustedSources.any { lowerSender.contains(it) || lowerText.contains(it) }
 
-        val isTrustedSource = trustedSources.any {
-            lowerSender.contains(it) || lowerText.contains(it)
-        }
+        if (!isTrustedSource) return NotificationProcessOutcome.NotPlacementEvent
 
-        if (!isTrustedSource) {
-            return NotificationProcessOutcome.NotPlacementEvent
-        }
+        val placementKeywords = listOf("ppt", "pre-placement", "oa", "online assessment", "interview", "ppi", "test", "shortlist", "placement", "internship", "session", "talk", "coding", "hackerrank", "hackerearth", "mettl", "superset", "assessment", "round", "gd", "group discussion", "deadline", "slot", "schedule", "venue")
+        val isManualEntry = forceParse || sender == "Manual Entry"
 
-        // 3b. Keyword Requirement: The message MUST contain placement-related keywords to be parsed
-        val placementKeywords = listOf(
-            "ppt", "pre-placement", "oa", "online assessment", "interview", "ppi",
-            "test", "shortlist", "placement", "internship", "session", "talk",
-            "coding", "hackerrank", "hackerearth", "mettl", "superset", "assessment",
-            "round", "gd", "group discussion", "deadline", "slot", "schedule", "venue"
-        )
+        val matchesKeyword = isManualEntry || settings.keywords.any { kw -> kw.isNotBlank() && (lowerText.contains(kw.lowercase()) || lowerSender.contains(kw.lowercase())) } || placementKeywords.any { kw -> lowerText.contains(kw) }
 
-        val isManualEntry = sender == "Manual Entry"
+        if (!matchesKeyword) return NotificationProcessOutcome.NoKeywordMatch
 
-        val matchesKeyword = isManualEntry || settings.keywords.any { kw ->
-            kw.isNotBlank() && (lowerText.contains(kw.lowercase()) || lowerSender.contains(kw.lowercase()))
-        } || placementKeywords.any { kw ->
-            lowerText.contains(kw)
-        }
+        val isCasualOrQuestion = !isManualEntry && (lowerText.startsWith("can anyone") || lowerText.startsWith("does anyone") || lowerText.startsWith("is anyone") || lowerText.startsWith("where is") || lowerText.startsWith("when will") || lowerText.startsWith("why is") || lowerText.startsWith("how to") || lowerText.startsWith("thanks") || lowerText.startsWith("thank you") || lowerText.startsWith("congrats") || lowerText.startsWith("all the best") || lowerText == "ok" || lowerText == "k" || lowerText == "yes" || lowerText == "no")
 
-        if (!matchesKeyword) {
-            return NotificationProcessOutcome.NoKeywordMatch
-        }
+        if (isCasualOrQuestion) return NotificationProcessOutcome.NotPlacementEvent
 
-        // 3c. Filter out pure casual chats, student queries, or greetings
-        val isCasualOrQuestion = !isManualEntry && (lowerText.startsWith("can anyone") ||
-                lowerText.startsWith("does anyone") ||
-                lowerText.startsWith("is anyone") ||
-                lowerText.startsWith("where is") ||
-                lowerText.startsWith("when will") ||
-                lowerText.startsWith("why is") ||
-                lowerText.startsWith("how to") ||
-                lowerText.startsWith("thanks") ||
-                lowerText.startsWith("thank you") ||
-                lowerText.startsWith("congrats") ||
-                lowerText.startsWith("all the best") ||
-                lowerText == "ok" || lowerText == "k" || lowerText == "yes" || lowerText == "no")
-
-        if (isCasualOrQuestion) {
-            return NotificationProcessOutcome.NotPlacementEvent
-        }
-
-        // 4. AI / Heuristic Extraction
-        var extraction = try {
-            extractPlacementEventUseCase(
-                text = text,
-                referenceDate = referenceDate,
-                apiKey = if (settings.useAiExtraction) settings.geminiApiKey else "",
-                forcePlacement = isManualEntry
-            )
+        val extractions = try {
+            extractPlacementEventUseCase(text, referenceDate, if (settings.useAiExtraction) settings.geminiApiKey else "", isManualEntry)
         } catch (e: Exception) {
             return NotificationProcessOutcome.Error("Extraction failed: ${e.message}", e)
         }
 
-        // A genuine event MUST be classified as an event
-        if (!extraction.isEvent && !isManualEntry) {
-            return NotificationProcessOutcome.NotPlacementEvent
-        }
+        if (extractions.isEmpty()) return NotificationProcessOutcome.NotPlacementEvent
 
-        // If company is empty but message came from a trusted source with genuine timing/date
-        if (extraction.company.isBlank() && (isManualEntry || (isTrustedSource && (extraction.startTime.isNotBlank() || extraction.date.isNotBlank())))) {
-            val fallbackCompany = when {
-                lowerSender.contains("computer center") || lowerSender.contains("computer centre") || lowerSender.contains("computer centere") || lowerText.contains("computer centre") || lowerText.contains("computer center") -> "Computer Centre IIT Madras"
-                lowerSender.contains("ug mechanical") || lowerSender.contains("me ug placements") || lowerText.contains("ug mechanical") -> "UG Mechanical Placements"
-                lowerSender.contains("students announcements") || lowerText.contains("students announcements") -> "IITM Students Announcements"
-                lowerSender.contains("rutwik") || lowerText.contains("rutwik") -> "Rutwik (Placement Notice)"
-                isManualEntry -> "Manual Entry"
-                sender.isNotBlank() -> sender.trim()
-                else -> "Placement Cell IITM"
-            }
-            extraction = extraction.copy(
-                isEvent = true,
-                company = fallbackCompany
-            )
-        }
+        var createdCount = 0
+        var confirmationCount = 0
+        var missingInfoCount = 0
+        var firstOutcome: NotificationProcessOutcome? = null
+        
+        val validEvents = extractions.filter { it.isEvent || isManualEntry }
+        if (validEvents.isEmpty()) return NotificationProcessOutcome.NotPlacementEvent
 
-        // Final guard: Must be an event, must have a company, and must have at least start time or date
-        if (!isManualEntry && (!extraction.isEvent || extraction.company.isBlank() || (extraction.startTime.isBlank() && extraction.date.isBlank()))) {
-            return NotificationProcessOutcome.NotPlacementEvent
-        }
+        val existingEventsList = placementEventRepository.getAllEventsImmediate()
 
-        // 5. Date resolution
-        val resolvedDate = resolveDateUseCase.resolve(extraction.date, referenceDate)
-
-        // 6. Build PlacementEvent model
-        val eventType = EventType.fromString(extraction.eventType)
-        val initialStatus = if (extraction.isValidForAutoCreation() && settings.automaticCalendarCreation && !settings.confirmationRequired) {
-            EventStatus.CREATED_IN_CALENDAR
-        } else {
-            EventStatus.PENDING_CONFIRMATION
-        }
-
-        val event = PlacementEvent(
-            notificationKey = notificationKey,
-            company = extraction.company.trim(),
-            eventType = eventType,
-            date = resolvedDate,
-            startTime = extraction.startTime.trim(),
-            endTime = extraction.endTime.ifBlank { null }?.trim(),
-            venue = extraction.venue.ifBlank { null }?.trim(),
-            meetingUrl = extraction.meetingUrl.ifBlank { null }?.trim(),
-            description = extraction.description.ifBlank { null }?.trim(),
-            rawNotificationSnippet = text.take(300),
-            incentivePoints = extraction.incentivePoints,
-            confidence = extraction.confidence,
-            status = initialStatus
-        )
-
-        // 7. Save to local repository
-        val savedId = placementEventRepository.insertEvent(event)
-        val savedEvent = event.copy(id = savedId)
-
-        // Automatically ensure company exists in Placement Vault and attach portal/meeting links
-        try {
-            val companyProfile = companyRepository.getOrCreateCompanyByName(savedEvent.company)
-            if (!savedEvent.meetingUrl.isNullOrBlank()) {
-                val existingWeb = companyProfile.website ?: ""
-                if (!existingWeb.contains(savedEvent.meetingUrl)) {
-                    val updatedWeb = if (existingWeb.isBlank()) savedEvent.meetingUrl else "$existingWeb\n${savedEvent.meetingUrl}"
-                    companyRepository.insertOrUpdateCompany(companyProfile.copy(website = updatedWeb))
+        for ((index, originalExtraction) in validEvents.withIndex()) {
+            var extraction = originalExtraction
+            
+            if (extraction.company.isBlank() && (isManualEntry || (isTrustedSource && (extraction.startTime.isNotBlank() || extraction.date.isNotBlank())))) {
+                val fallbackCompany = when {
+                    lowerSender.contains("computer center") || lowerSender.contains("computer centre") || lowerText.contains("computer centre") -> "Computer Centre IIT Madras"
+                    lowerSender.contains("ug mechanical") || lowerText.contains("ug mechanical") -> "UG Mechanical Placements"
+                    lowerSender.contains("students announcements") || lowerText.contains("students announcements") -> "IITM Students Announcements"
+                    lowerSender.contains("rutwik") || lowerText.contains("rutwik") -> "Rutwik (Placement Notice)"
+                    isManualEntry -> "Manual Entry"
+                    sender.isNotBlank() -> sender.trim()
+                    else -> "Placement Cell IITM"
                 }
+                extraction = extraction.copy(isEvent = true, company = fallbackCompany)
             }
-        } catch (e: Exception) {
-            // Non-fatal
-        }
 
-        // 8. Decide on auto-creation vs confirmation
-        val isEssentialInfoPresent = savedEvent.date.isNotBlank() && savedEvent.startTime.isNotBlank() && savedEvent.company.isNotBlank()
+            if (!isManualEntry && (!extraction.isEvent || extraction.company.isBlank() || (extraction.startTime.isBlank() && extraction.date.isBlank()))) {
+                continue
+            }
 
-        if (!isEssentialInfoPresent) {
-            return NotificationProcessOutcome.MissingEssentialInfo(savedEvent)
-        }
+            val resolvedDate = resolveDateUseCase.resolve(extraction.date, referenceDate)
+            val eventType = EventType.fromString(extraction.eventType)
+            
+            val isEssentialInfoPresent = resolvedDate.isNotBlank() && extraction.startTime.isNotBlank() && extraction.company.isNotBlank()
+            
+            var existingEvent = existingEventsList.find { it.company == extraction.company && it.eventType == eventType }
+            
+            var eventIdToUse = 0L
+            if (existingEvent != null) {
+                if (existingEvent.date == resolvedDate && existingEvent.startTime == extraction.startTime) continue
+                eventIdToUse = existingEvent.id
+            }
 
-        if (settings.automaticCalendarCreation && !settings.confirmationRequired) {
-            val result = createCalendarEventUseCase(savedEvent)
-            return if (result.isSuccess) {
-                NotificationProcessOutcome.CreatedAutomatically(savedEvent, result.getOrThrow())
+            val initialStatus = if (isEssentialInfoPresent && settings.automaticCalendarCreation && !settings.confirmationRequired) {
+                EventStatus.CREATED_IN_CALENDAR
             } else {
-                NotificationProcessOutcome.ConfirmationRequired(savedEvent)
+                EventStatus.PENDING_CONFIRMATION
             }
-        }
 
-        return NotificationProcessOutcome.ConfirmationRequired(savedEvent)
+            val suffix = if (index > 0) "-${index+1}" else ""
+            var event = PlacementEvent(
+                id = eventIdToUse,
+                notificationKey = "$notificationKey$suffix",
+                company = extraction.company.trim(),
+                eventType = eventType,
+                date = resolvedDate,
+                startTime = extraction.startTime.trim(),
+                endTime = extraction.endTime.ifBlank { null }?.trim(),
+                venue = extraction.venue.ifBlank { null }?.trim(),
+                meetingUrl = extraction.meetingUrl.ifBlank { null }?.trim(),
+                description = extraction.description.ifBlank { null }?.trim(),
+                rawNotificationSnippet = text.take(300),
+                incentivePoints = extraction.incentivePoints,
+                confidence = extraction.confidence,
+                status = initialStatus
+            )
+
+            val savedId = if (eventIdToUse > 0) {
+                placementEventRepository.updateEvent(event)
+                eventIdToUse
+            } else {
+                placementEventRepository.insertEvent(event)
+            }
+            
+            event = event.copy(id = savedId)
+            
+            // Schedule Alarm Reminder whenever event is saved/updated
+            if (isEssentialInfoPresent) {
+                notificationHelper.scheduleEventReminder(event)
+            }
+
+            try {
+                val companyProfile = companyRepository.getOrCreateCompanyByName(event.company)
+                if (!event.meetingUrl.isNullOrBlank()) {
+                    val existingWeb = companyProfile.website ?: ""
+                    if (!existingWeb.contains(event.meetingUrl)) {
+                        val updatedWeb = if (existingWeb.isBlank()) event.meetingUrl else "$existingWeb\n${event.meetingUrl}"
+                        companyRepository.insertOrUpdateCompany(companyProfile.copy(website = updatedWeb))
+                    }
+                }
+            } catch (e: Exception) {}
+
+            var outcome: NotificationProcessOutcome
+            if (!isEssentialInfoPresent) {
+                outcome = NotificationProcessOutcome.MissingEssentialInfo(event)
+                missingInfoCount++
+            } else if (settings.automaticCalendarCreation && !settings.confirmationRequired) {
+                val result = createCalendarEventUseCase(event)
+                outcome = if (result.isSuccess) {
+                    createdCount++
+                    NotificationProcessOutcome.CreatedAutomatically(event, result.getOrThrow())
+                } else {
+                    confirmationCount++
+                    NotificationProcessOutcome.ConfirmationRequired(event)
+                }
+            } else {
+                confirmationCount++
+                outcome = NotificationProcessOutcome.ConfirmationRequired(event)
+            }
+            
+            if (firstOutcome == null) firstOutcome = outcome
+        }
+        
+        val totalProcessed = createdCount + confirmationCount + missingInfoCount
+        if (totalProcessed == 0) return NotificationProcessOutcome.NotPlacementEvent
+        if (totalProcessed == 1) return firstOutcome!!
+        return NotificationProcessOutcome.MultipleProcessed(createdCount, confirmationCount, missingInfoCount)
     }
 }
