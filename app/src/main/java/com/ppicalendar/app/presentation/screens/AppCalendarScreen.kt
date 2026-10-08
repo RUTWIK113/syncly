@@ -14,6 +14,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarViewMonth
 import androidx.compose.material.icons.filled.Circle
 import androidx.compose.material.icons.filled.ViewAgenda
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -106,12 +108,29 @@ fun AppCalendarScreen(viewModel: MainViewModel, modifier: Modifier = Modifier) {
             ) {
                 val monthName = currentMonth.month.name.lowercase(Locale.ROOT)
                     .replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.ROOT) else it.toString() }
-                Text(
-                    text = "$monthName ${currentMonth.year}",
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = MaterialTheme.colorScheme.onBackground
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    IconButton(onClick = { currentMonth = currentMonth.minusMonths(1) }) {
+                        Icon(
+                            imageVector = Icons.Default.ArrowBack,
+                            contentDescription = "Previous month"
+                        )
+                    }
+                    Text(
+                        text = "$monthName ${currentMonth.year}",
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = MaterialTheme.colorScheme.onBackground
+                    )
+                    IconButton(onClick = { currentMonth = currentMonth.plusMonths(1) }) {
+                        Icon(
+                            imageVector = Icons.Default.ArrowForward,
+                            contentDescription = "Next month"
+                        )
+                    }
+                }
                 
                 // Segmented Toggle
                 Row(
