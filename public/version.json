@@ -1,7 +1,7 @@
 {
-  "versionCode": 12,
-  "versionName": "1.1.1",
-  "changelog": "? Added Automatic 1-Hour Event Reminders before placements\n? Immediate calendar sync without manual account refresh (added READ/WRITE_SYNC_SETTINGS)\n? Fixed restricted calendar provider visibility issue\n? Strict casual message suppression and placement whitelist verification\n? Android 13+ 'Restricted Setting' bypass shortcut",
-  "downloadUrl": "https://rutwik113.github.io/syncly/syncly_v1.1.1.apk",
+  "versionCode": 14,
+  "versionName": "1.1.3",
+  "changelog": "? Streamlined UI by removing the manual theme toggle icon\n? Improved Manual Event parser overrides strict whitelist filters\n? Enforces all manual inputs as valid Placement Events",
+  "downloadUrl": "https://rutwik113.github.io/syncly/syncly_v1.1.3.apk",
   "isMandatory": false
 }
