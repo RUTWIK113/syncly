@@ -108,28 +108,37 @@ fun AppCalendarScreen(viewModel: MainViewModel, modifier: Modifier = Modifier) {
             ) {
                 val monthName = currentMonth.month.name.lowercase(Locale.ROOT)
                     .replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.ROOT) else it.toString() }
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    IconButton(onClick = { currentMonth = currentMonth.minusMonths(1) }) {
-                        Icon(
-                            imageVector = Icons.Default.ArrowBack,
-                            contentDescription = "Previous month"
+                if (isMonthView) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        IconButton(onClick = { currentMonth = currentMonth.minusMonths(1) }) {
+                            Icon(
+                                imageVector = Icons.Default.ArrowBack,
+                                contentDescription = "Previous month"
+                            )
+                        }
+                        Text(
+                            text = "$monthName ${currentMonth.year}",
+                            style = MaterialTheme.typography.headlineMedium,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = MaterialTheme.colorScheme.onBackground
                         )
+                        IconButton(onClick = { currentMonth = currentMonth.plusMonths(1) }) {
+                            Icon(
+                                imageVector = Icons.Default.ArrowForward,
+                                contentDescription = "Next month"
+                            )
+                        }
                     }
+                } else {
                     Text(
                         text = "$monthName ${currentMonth.year}",
                         style = MaterialTheme.typography.headlineMedium,
                         fontWeight = FontWeight.ExtraBold,
                         color = MaterialTheme.colorScheme.onBackground
                     )
-                    IconButton(onClick = { currentMonth = currentMonth.plusMonths(1) }) {
-                        Icon(
-                            imageVector = Icons.Default.ArrowForward,
-                            contentDescription = "Next month"
-                        )
-                    }
                 }
                 
                 // Segmented Toggle
