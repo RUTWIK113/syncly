@@ -135,24 +135,55 @@ fun HomeScreen(
         return if (fullMasked.length > 20) fullMasked.take(17) + "..." else fullMasked
     }
 
-    val createdEvents = remember(allEvents) { allEvents.filter { it.status == EventStatus.CREATED_IN_CALENDAR } }
-    val pendingEvents = remember(allEvents) { allEvents.filter { it.status != EventStatus.CREATED_IN_CALENDAR && it.status != EventStatus.DISMISSED } }
+    val today = remember { java.time.LocalDate.now() }
+    val activeEvents = remember(allEvents, today) {
+        allEvents.filter { event ->
+            try {
+                val eventDate = java.time.LocalDate.parse(event.date)
+                !eventDate.isBefore(today)
+            } catch (e: Exception) {
+                true // If we can't parse it, keep it in active to be safe
+            }
+        }
+    }
+    
+    val pastEventsList = remember(allEvents, today) {
+        allEvents.filter { event ->
+            try {
+                val eventDate = java.time.LocalDate.parse(event.date)
+                eventDate.isBefore(today)
+            } catch (e: Exception) {
+                false
+            }
+        }
+    }
+
+    val createdEvents = remember(activeEvents) { activeEvents.filter { it.status == EventStatus.CREATED_IN_CALENDAR } }
+    val pendingEvents = remember(activeEvents) { activeEvents.filter { it.status != EventStatus.CREATED_IN_CALENDAR && it.status != EventStatus.DISMISSED } }
     val createdCount = createdEvents.size
     val pendingCount = pendingEvents.size
 
-    val displayedEvents = when (selectedTab) {
-        0 -> createdEvents
-        1 -> pendingEvents
-        2 -> allEvents
-        else -> createdEvents
+    val displayedEvents = if (showPastEvents) {
+        pastEventsList
+    } else {
+        when (selectedTab) {
+            0 -> createdEvents
+            1 -> pendingEvents
+            2 -> activeEvents
+            else -> createdEvents
+        }
     }
 
-    val filteredEvents = remember(displayedEvents, eventTypeFilter) {
-        when (eventTypeFilter) {
-            EventTypeFilter.ALL -> displayedEvents
-            EventTypeFilter.PPT -> displayedEvents.filter { it.eventType == com.ppicalendar.app.domain.model.EventType.PRE_PLACEMENT_TALK }
-            EventTypeFilter.OA -> displayedEvents.filter { it.eventType == com.ppicalendar.app.domain.model.EventType.ONLINE_ASSESSMENT }
-            EventTypeFilter.RESUME -> displayedEvents.filter { it.eventType == com.ppicalendar.app.domain.model.EventType.RESUME_DEADLINE }
+    val filteredEvents = remember(displayedEvents, eventTypeFilter, showPastEvents) {
+        if (showPastEvents) {
+            displayedEvents
+        } else {
+            when (eventTypeFilter) {
+                EventTypeFilter.ALL -> displayedEvents
+                EventTypeFilter.PPT -> displayedEvents.filter { it.eventType == com.ppicalendar.app.domain.model.EventType.PRE_PLACEMENT_TALK }
+                EventTypeFilter.OA -> displayedEvents.filter { it.eventType == com.ppicalendar.app.domain.model.EventType.ONLINE_ASSESSMENT }
+                EventTypeFilter.RESUME -> displayedEvents.filter { it.eventType == com.ppicalendar.app.domain.model.EventType.RESUME_DEADLINE }
+            }
         }
     }
 
@@ -163,6 +194,14 @@ fun HomeScreen(
                 title = "Syncly",
                 isHighContrast = liveSettings.isDarkTheme,
                 actions = {
+                    TextButton(onClick = { showPastEvents = !showPastEvents }) {
+                        Text(
+                            text = if (showPastEvents) "Active Events" else "Past Events",
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
                     val initial = liveSettings.connectedEmail.firstOrNull()?.uppercaseChar() ?: 'U'
                     Box(
                         modifier = Modifier
@@ -204,76 +243,78 @@ fun HomeScreen(
                 }
 
                 // Interactive KPI Metric Cards acting as Tabs
-                item {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        StatMetricCard(
-                            title = "Synced",
-                            count = createdCount.toString(),
-                            icon = Icons.Default.CheckCircleOutline,
-                            isSelected = selectedTab == 0,
-                            onClick = { selectedTab = 0 },
-                            modifier = Modifier.weight(1f)
-                        )
-                        StatMetricCard(
-                            title = "Pending",
-                            count = pendingCount.toString(),
-                            icon = Icons.Default.PendingActions,
-                            isSelected = selectedTab == 1,
-                            onClick = { selectedTab = 1 },
-                            modifier = Modifier.weight(1f)
-                        )
-                        StatMetricCard(
-                            title = "All",
-                            count = allEvents.size.toString(),
-                            icon = Icons.Default.NotificationsActive,
-                            isSelected = selectedTab == 2,
-                            onClick = { selectedTab = 2 },
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-                }
-
-                // Incentive Points Filter Chips (All, points=yes, points=no)
-                item {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        EventTypeFilter.entries.forEach { filter ->
-                            val isSelected = eventTypeFilter == filter
-                            val count = when (filter) {
-                                EventTypeFilter.ALL -> displayedEvents.size
-                                EventTypeFilter.PPT -> displayedEvents.count { it.eventType == com.ppicalendar.app.domain.model.EventType.PRE_PLACEMENT_TALK }
-                                EventTypeFilter.OA -> displayedEvents.count { it.eventType == com.ppicalendar.app.domain.model.EventType.ONLINE_ASSESSMENT }
-                                EventTypeFilter.RESUME -> displayedEvents.count { it.eventType == com.ppicalendar.app.domain.model.EventType.RESUME_DEADLINE }
-                            }
-                            FilterChip(
-                                selected = isSelected,
-                                onClick = { eventTypeFilter = filter },
-                                label = {
-                                    Text(
-                                        text = when (filter) {
-                                            EventTypeFilter.ALL -> "All"
-                                            EventTypeFilter.PPT -> "PPT"
-                                            EventTypeFilter.OA -> "OA"
-                                            EventTypeFilter.RESUME -> "Resume"
-                                        },
-                                        fontSize = 12.sp,
-                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
-                                    )
-                                },
-                                colors = FilterChipDefaults.filterChipColors(
-                                    selectedContainerColor = MaterialTheme.colorScheme.primary,
-                                    selectedLabelColor = MaterialTheme.colorScheme.onPrimary
-                                )
+                if (!showPastEvents) {
+                    item {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            StatMetricCard(
+                                title = "Synced",
+                                count = createdCount.toString(),
+                                icon = Icons.Default.CheckCircleOutline,
+                                isSelected = selectedTab == 0,
+                                onClick = { selectedTab = 0 },
+                                modifier = Modifier.weight(1f)
                             )
+                            StatMetricCard(
+                                title = "Pending",
+                                count = pendingCount.toString(),
+                                icon = Icons.Default.PendingActions,
+                                isSelected = selectedTab == 1,
+                                onClick = { selectedTab = 1 },
+                                modifier = Modifier.weight(1f)
+                            )
+                            StatMetricCard(
+                                title = "All",
+                                count = activeEvents.size.toString(),
+                                icon = Icons.Default.NotificationsActive,
+                                isSelected = selectedTab == 2,
+                                onClick = { selectedTab = 2 },
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+                    }
+    
+                    // Incentive Points Filter Chips (All, points=yes, points=no)
+                    item {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            EventTypeFilter.entries.forEach { filter ->
+                                val isSelected = eventTypeFilter == filter
+                                val count = when (filter) {
+                                    EventTypeFilter.ALL -> displayedEvents.size
+                                    EventTypeFilter.PPT -> displayedEvents.count { it.eventType == com.ppicalendar.app.domain.model.EventType.PRE_PLACEMENT_TALK }
+                                    EventTypeFilter.OA -> displayedEvents.count { it.eventType == com.ppicalendar.app.domain.model.EventType.ONLINE_ASSESSMENT }
+                                    EventTypeFilter.RESUME -> displayedEvents.count { it.eventType == com.ppicalendar.app.domain.model.EventType.RESUME_DEADLINE }
+                                }
+                                FilterChip(
+                                    selected = isSelected,
+                                    onClick = { eventTypeFilter = filter },
+                                    label = {
+                                        Text(
+                                            text = when (filter) {
+                                                EventTypeFilter.ALL -> "All"
+                                                EventTypeFilter.PPT -> "PPT"
+                                                EventTypeFilter.OA -> "OA"
+                                                EventTypeFilter.RESUME -> "Resume"
+                                            },
+                                            fontSize = 12.sp,
+                                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+                                        )
+                                    },
+                                    colors = FilterChipDefaults.filterChipColors(
+                                        selectedContainerColor = MaterialTheme.colorScheme.primary,
+                                        selectedLabelColor = MaterialTheme.colorScheme.onPrimary
+                                    )
+                                )
+                            }
                         }
                     }
                 }
