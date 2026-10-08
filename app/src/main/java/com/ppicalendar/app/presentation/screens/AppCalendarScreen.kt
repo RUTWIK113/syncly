@@ -238,43 +238,50 @@ fun AppCalendarScreen(viewModel: MainViewModel, modifier: Modifier = Modifier) {
                                                 modifier = Modifier.weight(1f),
                                                 contentAlignment = Alignment.Center
                                             ) {
-                                                // Date Circle
-                                                Box(
-                                                    modifier = Modifier
-                                                        .size(36.dp)
-                                                        .clip(CircleShape)
-                                                        .background(if (isSelected) SynclyPrimaryAmber else Color.Transparent)
-                                                        .clickable { 
-                                                            selectedDate = date 
-                                                            // Removed redirection to day view as requested
-                                                        },
-                                                    contentAlignment = Alignment.Center
-                                                ) {
-                                                    Text(
-                                                        text = currentDay.toString(),
-                                                        color = if (isSelected) Color(0xFF231B00) else MaterialTheme.colorScheme.onSurface,
-                                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
-                                                    )
-                                                }
-                                                // Notification Badge
-                                                if (eventCount > 0) {
+                                                Box(modifier = Modifier.size(36.dp)) {
+                                                    // Date Circle
                                                     Box(
                                                         modifier = Modifier
-                                                            .align(Alignment.TopEnd)
-                                                            .offset(x = 2.dp, y = (-2).dp)
-                                                            .size(16.dp)
-                                                            .zIndex(1f)
+                                                            .fillMaxSize()
                                                             .clip(CircleShape)
-                                                            .background(Color(0xFF4CAF50))
-                                                            .border(1.dp, MaterialTheme.colorScheme.surface, CircleShape),
+                                                            .background(if (isSelected) SynclyPrimaryAmber else Color.Transparent)
+                                                            .clickable { 
+                                                                selectedDate = date 
+                                                                // Removed redirection to day view as requested
+                                                            },
                                                         contentAlignment = Alignment.Center
                                                     ) {
                                                         Text(
-                                                            text = eventCount.toString(),
-                                                            color = Color.White,
-                                                            fontSize = 9.sp,
-                                                            fontWeight = FontWeight.Bold
+                                                            text = currentDay.toString(),
+                                                            color = if (isSelected) Color(0xFF231B00) else MaterialTheme.colorScheme.onSurface,
+                                                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
                                                         )
+                                                    }
+                                                    // Notification Badge
+                                                    if (eventCount > 0) {
+                                                        Box(
+                                                            modifier = Modifier
+                                                                .align(Alignment.TopEnd)
+                                                                .offset(x = 6.dp, y = (-2).dp)
+                                                                .size(16.dp)
+                                                                .zIndex(1f)
+                                                                .clip(CircleShape)
+                                                                .background(Color(0xFF4CAF50))
+                                                                .border(1.dp, MaterialTheme.colorScheme.surface, CircleShape),
+                                                            contentAlignment = Alignment.Center
+                                                        ) {
+                                                            Text(
+                                                                text = eventCount.toString(),
+                                                                color = Color.White,
+                                                                fontSize = 9.sp,
+                                                                fontWeight = FontWeight.Bold,
+                                                                style = androidx.compose.ui.text.TextStyle(
+                                                                    platformStyle = androidx.compose.ui.text.PlatformTextStyle(
+                                                                        includeFontPadding = false
+                                                                    )
+                                                                )
+                                                            )
+                                                        }
                                                     }
                                                 }
                                             }

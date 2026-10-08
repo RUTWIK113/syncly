@@ -1,4 +1,4 @@
-﻿package com.ppicalendar.app.domain.usecase
+package com.ppicalendar.app.domain.usecase
 
 import com.ppicalendar.app.data.notification.NotificationHelper
 import com.ppicalendar.app.domain.model.EventStatus
@@ -15,6 +15,7 @@ sealed class NotificationProcessOutcome {
     object AlreadyProcessed : NotificationProcessOutcome()
     object NoKeywordMatch : NotificationProcessOutcome()
     object NotPlacementEvent : NotificationProcessOutcome()
+    object DuplicateEvent : NotificationProcessOutcome()
     data class MultipleProcessed(val created: Int, val requiredConfirmation: Int, val missingInfo: Int) : NotificationProcessOutcome()
     data class CreatedAutomatically(val event: PlacementEvent, val calendarEventId: Long) : NotificationProcessOutcome()
     data class ConfirmationRequired(val event: PlacementEvent) : NotificationProcessOutcome()
@@ -76,6 +77,7 @@ class ProcessNotificationUseCase(
         var createdCount = 0
         var confirmationCount = 0
         var missingInfoCount = 0
+        var duplicateCount = 0
         var firstOutcome: NotificationProcessOutcome? = null
         
         val validEvents = extractions.filter { it.isEvent || isManualEntry }
@@ -112,7 +114,10 @@ class ProcessNotificationUseCase(
             
             var eventIdToUse = 0L
             if (existingEvent != null) {
-                if (existingEvent.date == resolvedDate && existingEvent.startTime == extraction.startTime) continue
+                if (existingEvent.date == resolvedDate && existingEvent.startTime == extraction.startTime) {
+                    duplicateCount++
+                    continue
+                }
                 eventIdToUse = existingEvent.id
             }
 
@@ -134,7 +139,7 @@ class ProcessNotificationUseCase(
                 venue = extraction.venue.ifBlank { null }?.trim(),
                 meetingUrl = extraction.meetingUrl.ifBlank { null }?.trim(),
                 description = extraction.description.ifBlank { null }?.trim(),
-                rawNotificationSnippet = text.take(300),
+                rawNotificationSnippet = text,
                 incentivePoints = extraction.incentivePoints,
                 confidence = extraction.confidence,
                 status = initialStatus
@@ -187,7 +192,10 @@ class ProcessNotificationUseCase(
         }
         
         val totalProcessed = createdCount + confirmationCount + missingInfoCount
-        if (totalProcessed == 0) return NotificationProcessOutcome.NotPlacementEvent
+        if (totalProcessed == 0) {
+            if (duplicateCount > 0) return NotificationProcessOutcome.DuplicateEvent
+            return NotificationProcessOutcome.NotPlacementEvent
+        }
         if (totalProcessed == 1) return firstOutcome!!
         return NotificationProcessOutcome.MultipleProcessed(createdCount, confirmationCount, missingInfoCount)
     }

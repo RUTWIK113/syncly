@@ -126,6 +126,9 @@ class WhatsAppNotificationListenerService : NotificationListenerService() {
                     is NotificationProcessOutcome.NoKeywordMatch -> {
                         Log.d(TAG, "Notification did not match placement keywords")
                     }
+                    is NotificationProcessOutcome.DuplicateEvent -> {
+                        Log.d(TAG, "Notification is a duplicate of an existing event")
+                    }
                     is NotificationProcessOutcome.NotPlacementEvent -> {
                         Log.d(TAG, "Notification classified as NOT a placement event")
                     }
