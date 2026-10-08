@@ -1,4 +1,4 @@
-package com.ppicalendar.app.domain.usecase
+﻿package com.ppicalendar.app.domain.usecase
 
 import com.ppicalendar.app.domain.model.ExtractionResult
 import com.ppicalendar.app.domain.repository.EventExtractor
@@ -12,7 +12,7 @@ class ExtractPlacementEventUseCase(
         referenceDate: LocalDate = LocalDate.now(),
         apiKey: String = "",
         forcePlacement: Boolean = false
-    ): ExtractionResult {
+    ): List<ExtractionResult> {
         return eventExtractor.extractEvent(text, referenceDate, apiKey, forcePlacement)
     }
 }

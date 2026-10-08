@@ -37,6 +37,8 @@ class DataStoreManager(private val context: Context) {
         val ACCESSIBILITY_ENABLED = booleanPreferencesKey("accessibility_enabled")
         val APP_OPEN_COUNT = intPreferencesKey("app_open_count")
         val LAST_RATED_APP_OPEN_COUNT = intPreferencesKey("last_rated_app_open_count")
+        val GOOGLE_CALENDAR_INTEGRATION = booleanPreferencesKey("google_calendar_integration")
+        val GOOGLE_CALENDAR_SYNC_MODE = stringPreferencesKey("google_calendar_sync_mode")
     }
 
     val appOpenCountFlow: Flow<Int> = context.dataStore.data.map { prefs ->
@@ -72,12 +74,22 @@ class DataStoreManager(private val context: Context) {
             geminiApiKey = prefs[PreferencesKeys.GEMINI_API_KEY] ?: "",
             useAiExtraction = prefs[PreferencesKeys.USE_AI_EXTRACTION] ?: true,
             isDarkTheme = prefs[PreferencesKeys.DARK_THEME] ?: false,
-            accessibilityEnabled = prefs[PreferencesKeys.ACCESSIBILITY_ENABLED] ?: false
+            accessibilityEnabled = prefs[PreferencesKeys.ACCESSIBILITY_ENABLED] ?: false,
+            googleCalendarIntegrationEnabled = prefs[PreferencesKeys.GOOGLE_CALENDAR_INTEGRATION] ?: false,
+            googleCalendarSyncMode = prefs[PreferencesKeys.GOOGLE_CALENDAR_SYNC_MODE] ?: "Manual"
         )
     }
 
     suspend fun setAccessibilityEnabled(enabled: Boolean) {
         context.dataStore.edit { it[PreferencesKeys.ACCESSIBILITY_ENABLED] = enabled }
+    }
+
+    suspend fun setGoogleCalendarIntegrationEnabled(enabled: Boolean) {
+        context.dataStore.edit { it[PreferencesKeys.GOOGLE_CALENDAR_INTEGRATION] = enabled }
+    }
+
+    suspend fun setGoogleCalendarSyncMode(mode: String) {
+        context.dataStore.edit { it[PreferencesKeys.GOOGLE_CALENDAR_SYNC_MODE] = mode }
     }
 
     suspend fun getSettings(): AppSettings = settingsFlow.first()

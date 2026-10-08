@@ -228,7 +228,7 @@ class NotificationHelper(private val context: Context) {
         )
 
         val body = buildString {
-            append("Starting in 1 hour at $time")
+            append("Starting in 30 minutes at $time")
             if (!venue.isNullOrBlank()) append("\n📍 Venue: $venue")
         }
 
@@ -254,7 +254,7 @@ class NotificationHelper(private val context: Context) {
         try {
             val formatter = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
             val eventDateTime = java.time.LocalDateTime.parse("${event.date} ${event.startTime}", formatter)
-            val reminderTime = eventDateTime.minusHours(1).atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
+            val reminderTime = eventDateTime.minusMinutes(30).atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
 
             if (reminderTime > System.currentTimeMillis()) {
                 val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as android.app.AlarmManager

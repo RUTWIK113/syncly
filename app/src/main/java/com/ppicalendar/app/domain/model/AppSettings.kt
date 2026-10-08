@@ -21,7 +21,9 @@ data class AppSettings(
     val useAiExtraction: Boolean = true,
     val isDarkTheme: Boolean = false,
     val defaultReminderMinutes: Int = 60,
-    val accessibilityEnabled: Boolean = false
+    val accessibilityEnabled: Boolean = false,
+    val googleCalendarIntegrationEnabled: Boolean = false,
+    val googleCalendarSyncMode: String = "Manual"
 ) {
     companion object {
         val defaultKeywords = listOf(

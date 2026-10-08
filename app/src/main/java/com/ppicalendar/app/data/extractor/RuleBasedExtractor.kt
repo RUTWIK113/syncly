@@ -208,14 +208,15 @@ class RuleBasedExtractor(
             Regex("""\b((?:next\s+|this\s+|coming\s+)?(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday|mon|tue|wed|thu|fri|sat|sun))\b""", RegexOption.IGNORE_CASE),
             Regex("""\b(\d{1,2}(?:st|nd|rd|th)?\s+(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t|tember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)(?:\s+\d{4})?)\b""", RegexOption.IGNORE_CASE),
             Regex("""\b((?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t|tember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\s+\d{1,2}(?:st|nd|rd|th)?(?:,?\s+\d{4})?)\b""", RegexOption.IGNORE_CASE),
-            Regex("""\d{1,2}[/\.-]\d{1,2}(?:[/\.-]\d{2,4})?"""),
-            Regex("""\d{4}[/\.-]\d{1,2}[/\.-]\d{1,2}""")
+            Regex("""(\d{1,2}[/\.-]\d{1,2}(?:[/\.-]\d{2,4})?)"""),
+            Regex("""(\d{4}[/\.-]\d{1,2}[/\.-]\d{1,2})""")
         )
 
         for (pattern in relativePatterns) {
             val match = pattern.find(text)
             if (match != null) {
-                return match.groupValues[1].trim()
+                val captured = if (match.groupValues.size > 1) match.groupValues[1] else match.groupValues[0]
+                return captured.trim()
             }
         }
 

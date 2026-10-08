@@ -137,7 +137,8 @@ class DefaultAppContainer(private val context: Context) : AppContainer {
             extractPlacementEventUseCase = extractPlacementEventUseCase,
             resolveDateUseCase = resolveDateUseCase,
             createCalendarEventUseCase = createCalendarEventUseCase,
-            companyRepository = companyRepository
+            companyRepository = companyRepository,
+            notificationHelper = notificationHelper
         )
     }
 
@@ -145,3 +146,4 @@ class DefaultAppContainer(private val context: Context) : AppContainer {
         com.ppicalendar.app.domain.usecase.CheckAppUpdateUseCase(context)
     }
 }
+

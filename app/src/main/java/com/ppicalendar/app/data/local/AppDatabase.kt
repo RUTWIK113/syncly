@@ -23,7 +23,7 @@ import com.ppicalendar.app.data.local.entity.ProcessedNotificationEntity
         CompanyAttachmentEntity::class,
         IncentivePointEntity::class
     ],
-    version = 4,
+    version = 5,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {

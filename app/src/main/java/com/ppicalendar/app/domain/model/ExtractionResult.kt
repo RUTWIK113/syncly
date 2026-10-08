@@ -4,6 +4,11 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
+data class ExtractionResponse(
+    val events: List<ExtractionResult> = emptyList()
+)
+
+@Serializable
 data class ExtractionResult(
     @SerialName("is_event")
     val isEvent: Boolean = false,

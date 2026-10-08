@@ -17,6 +17,7 @@ data class CompanyEntity(
     val payScale: String? = null,
     val roleNames: String? = null,
     val website: String? = null,
+    val applied: Boolean? = null,
     val createdAt: Long = System.currentTimeMillis()
 ) {
     fun toDomain(): CompanyProfile {
@@ -27,6 +28,7 @@ data class CompanyEntity(
             payScale = payScale,
             roleNames = roleNames,
             website = website,
+            applied = applied,
             createdAt = createdAt
         )
     }
@@ -40,6 +42,7 @@ data class CompanyEntity(
                 payScale = profile.payScale,
                 roleNames = profile.roleNames,
                 website = profile.website,
+                applied = profile.applied,
                 createdAt = profile.createdAt
             )
         }

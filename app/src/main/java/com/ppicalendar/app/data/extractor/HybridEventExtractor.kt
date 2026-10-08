@@ -1,4 +1,4 @@
-package com.ppicalendar.app.data.extractor
+﻿package com.ppicalendar.app.data.extractor
 
 import android.util.Log
 import com.ppicalendar.app.domain.model.ExtractionResult
@@ -19,18 +19,24 @@ class HybridEventExtractor(
         referenceDate: LocalDate,
         apiKey: String,
         forcePlacement: Boolean
-    ): ExtractionResult {
+    ): List<ExtractionResult> {
         // If Gemini API Key is provided, attempt AI extraction
         if (apiKey.isNotBlank()) {
             try {
                 Log.d(TAG, "Attempting extraction via Gemini AI...")
-                var result = geminiApiExtractor.extract(text, referenceDate, apiKey)
-                if (forcePlacement && result.company.isNotBlank()) {
-                    result = result.copy(isEvent = true)
+                val results = geminiApiExtractor.extract(text, referenceDate, apiKey)
+                
+                val finalResults = results.map { result -> 
+                    if (forcePlacement && result.company.isNotBlank()) {
+                        result.copy(isEvent = true)
+                    } else {
+                        result
+                    }
                 }
-                if (result.isEvent && result.company.isNotBlank()) {
-                    Log.d(TAG, "Gemini AI extraction successful: ${result.company} - ${result.eventType}")
-                    return result
+                
+                if (finalResults.any { it.isEvent && it.company.isNotBlank() }) {
+                    Log.d(TAG, "Gemini AI extraction successful")
+                    return finalResults
                 }
             } catch (e: Exception) {
                 Log.w(TAG, "Gemini AI extraction failed or rate limited, falling back to rule-based engine: ${e.message}")
@@ -39,6 +45,7 @@ class HybridEventExtractor(
 
         // Fallback to offline rule-based & regex heuristics engine
         Log.d(TAG, "Executing offline Rule-Based Extractor...")
-        return ruleBasedExtractor.extract(text, referenceDate, forcePlacement)
+        val fallbackResult = ruleBasedExtractor.extract(text, referenceDate, forcePlacement)
+        return listOf(fallbackResult)
     }
 }

@@ -25,6 +25,7 @@ data class CompanyProfile(
     val payScale: String? = null,
     val roleNames: String? = null,
     val website: String? = null,
+    val applied: Boolean? = null,
     val attachments: List<CompanyAttachment> = emptyList(),
     val eventCount: Int = 0,
     val createdAt: Long = System.currentTimeMillis()
