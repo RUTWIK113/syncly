@@ -14,6 +14,7 @@ import com.ppicalendar.app.domain.model.EventStatus
 import com.ppicalendar.app.domain.model.EventType
 import com.ppicalendar.app.domain.model.PlacementEvent
 import com.ppicalendar.app.domain.usecase.NotificationProcessOutcome
+import com.ppicalendar.app.presentation.widget.DailyCalendarWidgetProvider
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -238,6 +239,7 @@ class MainViewModel(
                 // Schedule Reminder
                 com.ppicalendar.app.data.notification.NotificationHelper(getApplication()).scheduleEventReminder(event)
 
+                DailyCalendarWidgetProvider.updateAllWidgets(getApplication())
                 _uiEvents.emit(UiNotification("✅ Added '${event.formattedTitle}' to Calendar!"))
             }.onFailure { error ->
                 _uiEvents.emit(UiNotification("❌ ${error.message ?: "Failed to create calendar event"}", isError = true))
@@ -248,6 +250,7 @@ class MainViewModel(
     fun dismissEvent(eventId: Long) {
         viewModelScope.launch {
             container.placementEventRepository.updateEventStatus(eventId, EventStatus.DISMISSED)
+            DailyCalendarWidgetProvider.updateAllWidgets(getApplication())
             _uiEvents.emit(UiNotification("Event dismissed"))
         }
     }
@@ -263,6 +266,7 @@ class MainViewModel(
                 }
             }
             container.placementEventRepository.deleteEvent(eventId)
+            DailyCalendarWidgetProvider.updateAllWidgets(getApplication())
             _uiEvents.emit(UiNotification("Event deleted from calendar. Company preserved in Vault."))
         }
     }
@@ -278,6 +282,8 @@ class MainViewModel(
             if (event.date.isNotBlank() && event.startTime.isNotBlank()) {
                 container.notificationHelper.scheduleEventReminder(event)
             }
+
+            DailyCalendarWidgetProvider.updateAllWidgets(getApplication())
 
             // Reflect company name change in the Vault and cascade to other events
             if (oldEvent != null && oldEvent.company != event.company) {
@@ -511,6 +517,7 @@ class MainViewModel(
             }
 
             container.notificationHelper.scheduleEventReminder(createdEvent)
+            DailyCalendarWidgetProvider.updateAllWidgets(getApplication())
             _uiEvents.emit(UiNotification("✅ Added '${createdEvent.formattedTitle}' to Calendar!"))
         }
     }
@@ -665,6 +672,7 @@ class MainViewModel(
             notificationHelper = container.notificationHelper
         )
         if (success) {
+            DailyCalendarWidgetProvider.updateAllWidgets(getApplication())
             _uiEvents.emit(UiNotification("✓ Data restored successfully from internal storage!"))
         } else {
             // Also attempt calendar recovery directly
@@ -674,6 +682,7 @@ class MainViewModel(
                 notificationHelper = container.notificationHelper
             )
             if (recovered) {
+                DailyCalendarWidgetProvider.updateAllWidgets(getApplication())
                 _uiEvents.emit(UiNotification("✓ Recovered synced events from Calendar!"))
             } else {
                 _uiEvents.emit(UiNotification("Database already has data or no backup found."))

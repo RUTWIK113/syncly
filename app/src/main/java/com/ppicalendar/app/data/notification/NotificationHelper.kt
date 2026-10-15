@@ -269,6 +269,10 @@ class NotificationHelper(private val context: Context) {
         }
     }
 
+    fun updateWidgets() {
+        com.ppicalendar.app.presentation.widget.DailyCalendarWidgetProvider.updateAllWidgets(context)
+    }
+
     fun showEventReminderNotification(
         eventId: Long = 0L,
         title: String,
