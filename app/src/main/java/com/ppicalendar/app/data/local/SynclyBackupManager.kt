@@ -148,11 +148,9 @@ object SynclyBackupManager {
     ): Boolean = withContext(Dispatchers.IO) {
         try {
             val eventCount = database.placementEventDao().getAllEventsImmediate().size
-            val companyCount = database.companyDao().getAllCompaniesImmediate().size
-            val pointCount = database.incentivePointDao().getAllPointsImmediate().size
 
-            if (eventCount > 0 || companyCount > 0 || pointCount > 0) {
-                // Database is already populated, no need to auto-restore
+            // If events already exist, no need to auto-restore
+            if (eventCount > 0) {
                 return@withContext false
             }
 
@@ -165,14 +163,18 @@ object SynclyBackupManager {
                 }
             }
 
+            var restored = false
             if (backupFile.exists() && backupFile.length() >= 10) {
-                val restored = performRestoreFromJson(backupFile.readText(Charsets.UTF_8), database, notificationHelper)
-                if (restored) return@withContext true
+                restored = performRestoreFromJson(backupFile.readText(Charsets.UTF_8), database, notificationHelper)
             }
 
-            // If still empty, attempt Calendar Auto-Recovery
-            val recoveredFromCalendar = recoverEventsFromCalendar(context, database, notificationHelper)
-            recoveredFromCalendar
+            // If events are still empty, attempt Calendar Auto-Recovery
+            val currentEventCount = database.placementEventDao().getAllEventsImmediate().size
+            val recoveredFromCalendar = if (currentEventCount == 0) {
+                recoverEventsFromCalendar(context, database, notificationHelper)
+            } else false
+
+            restored || recoveredFromCalendar
         } catch (e: Exception) {
             e.printStackTrace()
             false
@@ -296,10 +298,10 @@ object SynclyBackupManager {
                 CalendarContract.Events.DTEND
             )
 
-            // Look for events created in the last 6 months or upcoming in next 6 months
-            val sixMonthsAgo = System.currentTimeMillis() - (180L * 24 * 60 * 60 * 1000)
+            // Look for events created in the last 1 year or upcoming
+            val oneYearAgo = System.currentTimeMillis() - (365L * 24 * 60 * 60 * 1000)
             val selection = "${CalendarContract.Events.DTSTART} >= ?"
-            val selectionArgs = arrayOf(sixMonthsAgo.toString())
+            val selectionArgs = arrayOf(oneYearAgo.toString())
 
             cursor = context.contentResolver.query(
                 CalendarContract.Events.CONTENT_URI,
@@ -330,14 +332,23 @@ object SynclyBackupManager {
 
                     // Check if this event was created by Syncly or is a placement notice
                     val isSynclyEvent = title.contains("•") ||
+                            title.contains("|") ||
                             description.contains("🎯") ||
                             description.contains("Placement") ||
                             description.contains("Syncly")
 
                     if (isSynclyEvent && title.isNotBlank() && dtStart > 0) {
-                        val parts = title.split("•").map { p -> p.trim() }
-                        val company = parts.firstOrNull()?.replace("🎯", "")?.trim() ?: "Placement Notice"
-                        val eventTypeStr = if (parts.size > 1) parts[1] else "General Event"
+                        val parts = if (title.contains("•")) {
+                            title.split("•").map { p -> p.trim() }
+                        } else if (title.contains("|")) {
+                            title.split("|").map { p -> p.trim() }
+                        } else {
+                            listOf(title)
+                        }
+
+                        val rawComp = parts.firstOrNull()?.replace("🎯", "")?.replace("[", "")?.replace("]", "")?.trim()
+                        val company = PlacementEvent.normalizeCompany(rawComp)
+                        val eventTypeStr = if (parts.size > 1) parts[1].replace("[", "").replace("]", "").trim() else "General Event"
                         val eventType = EventType.fromString(eventTypeStr)
 
                         val startDateTime = LocalDateTime.ofInstant(Instant.ofEpochMilli(dtStart), ZoneId.systemDefault())
@@ -350,7 +361,7 @@ object SynclyBackupManager {
                         val entity = PlacementEventEntity(
                             notificationKey = "recovered_cal_$calId",
                             company = company,
-                            title = PlacementEvent.DEFAULT_TITLE_FALLBACK,
+                            title = "",
                             eventType = eventType.name,
                             date = eventDate,
                             startTime = startTime,
@@ -366,12 +377,14 @@ object SynclyBackupManager {
                         )
 
                         database.placementEventDao().insert(entity)
-                        database.companyDao().insert(
-                            CompanyEntity(
-                                name = company,
-                                createdAt = System.currentTimeMillis()
+                        if (company != PlacementEvent.DEFAULT_COMPANY_FALLBACK) {
+                            database.companyDao().insert(
+                                CompanyEntity(
+                                    name = company,
+                                    createdAt = System.currentTimeMillis()
+                                )
                             )
-                        )
+                        }
 
                         if (notificationHelper != null) {
                             notificationHelper.scheduleEventReminder(entity.toDomain())

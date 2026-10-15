@@ -46,7 +46,6 @@ fun EventCreationDialog(
 
     // Method B: Quick Form
     var companyName by remember { mutableStateOf("") }
-    var eventTitle by remember { mutableStateOf("") }
     var selectedEventType by remember { mutableStateOf(EventType.PRE_PLACEMENT_TALK) }
     var eventTypeDropdownExpanded by remember { mutableStateOf(false) }
 
@@ -145,17 +144,8 @@ fun EventCreationDialog(
                         OutlinedTextField(
                             value = companyName,
                             onValueChange = { companyName = it },
-                            label = { Text("Company Name (Optional for personal)") },
-                            placeholder = { Text("e.g. Google, McKinsey, Personal") },
-                            modifier = Modifier.fillMaxWidth(),
-                            singleLine = true
-                        )
-
-                        OutlinedTextField(
-                            value = eventTitle,
-                            onValueChange = { eventTitle = it },
-                            label = { Text("Event Title") },
-                            placeholder = { Text("------- (Defaults if empty)") },
+                            label = { Text("Company Name (Optional)") },
+                            placeholder = { Text("e.g. Google, McKinsey (or '-------')") },
                             modifier = Modifier.fillMaxWidth(),
                             singleLine = true
                         )
@@ -286,14 +276,13 @@ fun EventCreationDialog(
                     } else {
                         Button(
                             onClick = {
-                                val finalTitle = if (eventTitle.isBlank()) PlacementEvent.DEFAULT_TITLE_FALLBACK else eventTitle.trim()
                                 val deadlineDate = if (hasDeadline && deadlineDateString.isNotBlank()) deadlineDateString else null
                                 val deadlineTime = PlacementEvent.normalizeDeadlineTime(deadlineDate, deadlineTimeString)
 
                                 val event = PlacementEvent(
                                     notificationKey = UUID.randomUUID().toString(),
-                                    company = companyName.trim().ifBlank { "Personal" },
-                                    title = finalTitle,
+                                    company = companyName.trim().ifBlank { PlacementEvent.DEFAULT_COMPANY_FALLBACK },
+                                    title = "",
                                     eventType = selectedEventType,
                                     date = dateString,
                                     startTime = timeString,

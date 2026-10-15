@@ -91,8 +91,8 @@ class RuleBasedExtractor(
 
         return ExtractionResult(
             isEvent = isPlacementEvent,
-            company = company,
-            title = if (title.isBlank()) PlacementEvent.DEFAULT_TITLE_FALLBACK else title,
+            company = PlacementEvent.normalizeCompany(company),
+            title = "",
             eventType = eventType.name,
             date = resolvedDate,
             startTime = startTime,

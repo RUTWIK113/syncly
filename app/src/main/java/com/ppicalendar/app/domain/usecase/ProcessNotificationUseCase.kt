@@ -117,9 +117,10 @@ class ProcessNotificationUseCase(
             val resolvedDate = resolveDateUseCase.resolve(extraction.date, referenceDate)
             val eventType = EventType.fromString(extraction.eventType)
             
-            val isEssentialInfoPresent = resolvedDate.isNotBlank() && extraction.startTime.isNotBlank() && extraction.company.isNotBlank()
+            val finalCompany = PlacementEvent.normalizeCompany(extraction.company)
+            val isEssentialInfoPresent = resolvedDate.isNotBlank() && extraction.startTime.isNotBlank()
             
-            val existingEvent = existingEventsList.find { it.company == extraction.company && it.eventType == eventType }
+            val existingEvent = existingEventsList.find { it.company == finalCompany && it.eventType == eventType }
             
             var eventIdToUse = 0L
             if (existingEvent != null) {
@@ -136,9 +137,6 @@ class ProcessNotificationUseCase(
                 EventStatus.PENDING_CONFIRMATION
             }
 
-            val rawTitle = extraction.title.trim()
-            val finalTitle = if (rawTitle.isBlank()) PlacementEvent.DEFAULT_TITLE_FALLBACK else rawTitle
-
             val deadlineDate = extraction.deadlineDate.ifBlank { null }?.trim()
             val deadlineTime = PlacementEvent.normalizeDeadlineTime(deadlineDate, extraction.deadlineTime)
 
@@ -146,8 +144,8 @@ class ProcessNotificationUseCase(
             var event = PlacementEvent(
                 id = eventIdToUse,
                 notificationKey = "$notificationKey$suffix",
-                company = extraction.company.trim(),
-                title = finalTitle,
+                company = finalCompany,
+                title = "",
                 eventType = eventType,
                 date = resolvedDate,
                 startTime = extraction.startTime.trim(),
@@ -178,12 +176,14 @@ class ProcessNotificationUseCase(
             }
 
             try {
-                val companyProfile = companyRepository.getOrCreateCompanyByName(event.company)
-                if (!event.meetingUrl.isNullOrBlank()) {
-                    val existingWeb = companyProfile.website ?: ""
-                    if (!existingWeb.contains(event.meetingUrl)) {
-                        val newWeb = if (existingWeb.isBlank()) event.meetingUrl else "$existingWeb\n${event.meetingUrl}"
-                        companyRepository.insertOrUpdateCompany(companyProfile.copy(website = newWeb))
+                if (finalCompany.isNotBlank() && finalCompany != PlacementEvent.DEFAULT_COMPANY_FALLBACK) {
+                    val companyProfile = companyRepository.getOrCreateCompanyByName(event.company)
+                    if (!event.meetingUrl.isNullOrBlank()) {
+                        val existingWeb = companyProfile.website ?: ""
+                        if (!existingWeb.contains(event.meetingUrl)) {
+                            val newWeb = if (existingWeb.isBlank()) event.meetingUrl else "$existingWeb\n${event.meetingUrl}"
+                            companyRepository.insertOrUpdateCompany(companyProfile.copy(website = newWeb))
+                        }
                     }
                 }
             } catch (e: Exception) {

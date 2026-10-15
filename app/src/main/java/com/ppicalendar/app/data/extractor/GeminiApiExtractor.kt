@@ -79,15 +79,14 @@ class GeminiApiExtractor(
            - "PPT: 6PM, 9th Oct" + "Test Date: 6:45PM, 9th Oct" = TWO events (PRE_PLACEMENT_TALK + ONLINE_ASSESSMENT)
            - "GForm Deadline: 7th Oct EOD" = ONE event (REGISTRATION with deadline_date="YYYY-10-07", deadline_time="23:00")
         3. ALWAYS set is_event = true for any event that relates to campus placements, recruitment, tests, talks, or deadlines.
-        4. Extract the company name (e.g. "Squarepoint Capital", "Google", "Barclays"). If no company is mentioned, use sender or empty string.
-        5. Extract the event title (e.g. role title "Software Developer", "Desk Quant Analyst", or session topic). If no specific title is identifiable, set title to exactly "-------" (seven hyphens). NEVER save empty title.
-        6. Distinguish event date/time from registration/resume deadline:
+        4. Extract the company name (e.g. "Squarepoint Capital", "Google", "Barclays"). If no company name is mentioned or identifiable in the notice, set company to exactly "-------" (seven hyphens). NEVER leave company empty.
+        5. Distinguish event date/time from registration/resume deadline:
            - Event start time: HH:mm (24-hour format). If missing, leave as empty string "". NEVER assign 23:00 to event start times!
            - If a registration or submission deadline is explicitly specified, put it in deadline_date (YYYY-MM-DD). If deadline date is present but deadline time is omitted, default deadline_time to "23:00".
-        7. Normalize times to 24-hour HH:mm: "7pm" = "19:00", "6:45PM" = "18:45", "6PM - 6:45PM" = start "18:00" end "18:45".
-        8. For venues, capture campus lecture halls (CRC, RJN, RMN, MSB, ESB, CLT, SAC, etc.) or "Online".
-        9. Attach links intelligently: registration form links go to REGISTRATION, test links go to ONLINE_ASSESSMENT, WhatsApp group links to meeting_url.
-        10. Date format DD/MM/YYYY (Indian format): "07/10/2026" means day=07, month=10 (October), year=2026 -> "2026-10-07".
+        6. Normalize times to 24-hour HH:mm: "7pm" = "19:00", "6:45PM" = "18:45", "6PM - 6:45PM" = start "18:00" end "18:45".
+        7. For venues, capture campus lecture halls (CRC, RJN, RMN, MSB, ESB, CLT, SAC, etc.) or "Online".
+        8. Attach links intelligently: registration form links go to REGISTRATION, test links go to ONLINE_ASSESSMENT, WhatsApp group links to meeting_url.
+        9. Date format DD/MM/YYYY (Indian format): "07/10/2026" means day=07, month=10 (October), year=2026 -> "2026-10-07".
         
         Supported event types: PRE_PLACEMENT_TALK, ONLINE_ASSESSMENT, RESUME_SUBMISSION, REGISTRATION, INTERVIEW, GROUP_DISCUSSION, SHORTLIST_ANNOUNCEMENT, COMPANY_BRIEFING, GENERAL_EVENT, PPI, OTHER
         
@@ -96,8 +95,7 @@ class GeminiApiExtractor(
           "events": [
             {
               "is_event": true,
-              "company": "Company Name",
-              "title": "Role / Event Title or -------",
+              "company": "Company Name or -------",
               "event_type": "PRE_PLACEMENT_TALK",
               "date": "YYYY-MM-DD",
               "start_time": "HH:mm",
@@ -170,8 +168,9 @@ class GeminiApiExtractor(
             jsonObj.optInt("incentive_points")
         } else null
 
+        val company = PlacementEvent.normalizeCompany(jsonObj.optString("company", ""))
         val rawTitle = jsonObj.optString("title", "").trim()
-        val title = if (rawTitle.isBlank()) PlacementEvent.DEFAULT_TITLE_FALLBACK else rawTitle
+        val title = if (rawTitle.isBlank()) "" else rawTitle
 
         val deadlineDate = jsonObj.optString("deadline_date", "").trim()
         val rawDeadlineTime = jsonObj.optString("deadline_time", "").trim()
@@ -183,7 +182,7 @@ class GeminiApiExtractor(
 
         return ExtractionResult(
             isEvent = jsonObj.optBoolean("is_event", false),
-            company = jsonObj.optString("company", ""),
+            company = company,
             title = title,
             eventType = jsonObj.optString("event_type", "OTHER"),
             date = jsonObj.optString("date", ""),
@@ -200,12 +199,12 @@ class GeminiApiExtractor(
     }
 
     private fun normalizeResult(res: ExtractionResult): ExtractionResult {
-        val title = if (res.title.isBlank()) PlacementEvent.DEFAULT_TITLE_FALLBACK else res.title.trim()
+        val company = PlacementEvent.normalizeCompany(res.company)
         val deadlineTime = if (res.deadlineDate.isNotBlank() && res.deadlineTime.isBlank()) {
             PlacementEvent.DEFAULT_DEADLINE_TIME
         } else {
             res.deadlineTime
         }
-        return res.copy(title = title, deadlineTime = deadlineTime)
+        return res.copy(company = company, deadlineTime = deadlineTime)
     }
 }

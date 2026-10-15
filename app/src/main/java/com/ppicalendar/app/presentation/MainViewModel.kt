@@ -124,7 +124,7 @@ class MainViewModel(
         viewModelScope.launch {
             allEvents.collect { events ->
                 events.forEach { event ->
-                    if (event.company.isNotBlank()) {
+                    if (event.company.isNotBlank() && event.company != PlacementEvent.DEFAULT_COMPANY_FALLBACK) {
                         try {
                             val comp = container.companyRepository.getOrCreateCompanyByName(event.company)
                             if (!event.meetingUrl.isNullOrBlank()) {
@@ -454,14 +454,14 @@ class MainViewModel(
                     val first = extractions.first()
                     val resolvedDate = container.resolveDateUseCase.resolve(first.date, LocalDate.now())
                     val eventType = EventType.fromString(first.eventType)
-                    val title = if (first.title.isBlank()) PlacementEvent.DEFAULT_TITLE_FALLBACK else first.title
+                    val company = PlacementEvent.normalizeCompany(first.company)
                     val deadlineDate = first.deadlineDate.ifBlank { null }
                     val deadlineTime = PlacementEvent.normalizeDeadlineTime(deadlineDate, first.deadlineTime)
 
                     val draftEvent = PlacementEvent(
                         notificationKey = java.util.UUID.randomUUID().toString(),
-                        company = first.company.ifBlank { "Placement Notice" },
-                        title = title,
+                        company = company,
+                        title = "",
                         eventType = eventType,
                         date = resolvedDate,
                         startTime = first.startTime,

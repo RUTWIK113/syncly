@@ -36,7 +36,6 @@ fun EventDetailDialog(
     onSave: (PlacementEvent, Boolean) -> Unit
 ) {
     var company by remember { mutableStateOf(event.company) }
-    var title by remember { mutableStateOf(if (event.title == PlacementEvent.DEFAULT_TITLE_FALLBACK) "" else event.title) }
     var eventType by remember { mutableStateOf(event.eventType) }
     var date by remember { mutableStateOf(event.date) }
     var startTime by remember { mutableStateOf(event.startTime) }
@@ -88,16 +87,7 @@ fun EventDetailDialog(
                         value = company,
                         onValueChange = { company = it },
                         label = { Text("Company Name *") },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true
-                    )
-
-                    // Event Title
-                    OutlinedTextField(
-                        value = title,
-                        onValueChange = { title = it },
-                        label = { Text("Event Title") },
-                        placeholder = { Text("------- (Defaults if empty)") },
+                        placeholder = { Text("e.g. Google (or '-------')") },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true
                     )
@@ -281,13 +271,13 @@ fun EventDetailDialog(
                         }
                         Button(
                             onClick = {
-                                val finalTitle = if (title.isBlank()) PlacementEvent.DEFAULT_TITLE_FALLBACK else title.trim()
+                                val finalCompany = company.trim().ifBlank { PlacementEvent.DEFAULT_COMPANY_FALLBACK }
                                 val finalDeadlineDate = if (hasDeadline && deadlineDate.isNotBlank()) deadlineDate else null
                                 val finalDeadlineTime = PlacementEvent.normalizeDeadlineTime(finalDeadlineDate, deadlineTime)
 
                                 val updated = event.copy(
-                                    company = company.trim(),
-                                    title = finalTitle,
+                                    company = finalCompany,
+                                    title = "",
                                     eventType = eventType,
                                     date = date.trim(),
                                     startTime = startTime.trim(),

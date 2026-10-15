@@ -30,8 +30,17 @@ data class PlacementEvent(
     val createdAt: Long = System.currentTimeMillis()
 ) {
     companion object {
+        const val DEFAULT_COMPANY_FALLBACK = "-------"
         const val DEFAULT_TITLE_FALLBACK = "-------"
         const val DEFAULT_DEADLINE_TIME = "23:00"
+
+        fun normalizeCompany(input: String?): String {
+            return if (input.isNullOrBlank() || input.equals("null", ignoreCase = true) || input.equals("unknown", ignoreCase = true)) {
+                DEFAULT_COMPANY_FALLBACK
+            } else {
+                input.trim()
+            }
+        }
 
         fun normalizeTitle(input: String?): String {
             return if (input.isNullOrBlank()) DEFAULT_TITLE_FALLBACK else input.trim()
@@ -43,16 +52,19 @@ data class PlacementEvent(
         }
     }
 
+    val displayCompany: String
+        get() = if (company.isNotBlank()) company else DEFAULT_COMPANY_FALLBACK
+
     val displayTitle: String
         get() = if (title.isNotBlank()) title else DEFAULT_TITLE_FALLBACK
 
     val formattedTitle: String
         get() = when {
-            company.isNotBlank() && displayTitle != DEFAULT_TITLE_FALLBACK -> "[$company] | $displayTitle"
-            company.isNotBlank() -> "[$company] | [${eventType.displayName}]"
-            else -> displayTitle
+            company.isNotBlank() && company != DEFAULT_COMPANY_FALLBACK -> "[$company] • ${eventType.displayName}"
+            company == DEFAULT_COMPANY_FALLBACK -> "[$DEFAULT_COMPANY_FALLBACK] • ${eventType.displayName}"
+            else -> eventType.displayName
         }
 
     val isMissingEssentialInfo: Boolean
-        get() = date.isBlank() || startTime.isBlank() || company.isBlank()
+        get() = date.isBlank() || startTime.isBlank()
 }

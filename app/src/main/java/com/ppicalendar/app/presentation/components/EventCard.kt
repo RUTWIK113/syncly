@@ -73,7 +73,7 @@ fun EventCard(
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     Text(
-                        text = event.company,
+                        text = event.company.ifBlank { PlacementEvent.DEFAULT_COMPANY_FALLBACK },
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface,
@@ -134,19 +134,6 @@ fun EventCard(
                         )
                     }
                 }
-            }
-
-            // Optional Sub-row: Title if specified and not fallback
-            if (event.title.isNotBlank() && event.title != PlacementEvent.DEFAULT_TITLE_FALLBACK) {
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = event.title,
-                    style = MaterialTheme.typography.bodySmall,
-                    fontWeight = FontWeight.Medium,
-                    color = MaterialTheme.colorScheme.primary,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
             }
 
             Spacer(modifier = Modifier.height(6.dp))

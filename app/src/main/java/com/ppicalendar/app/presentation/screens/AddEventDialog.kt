@@ -54,7 +54,6 @@ fun AddEventDialog(
     onDismiss: () -> Unit,
     onAdd: (PlacementEvent) -> Unit
 ) {
-    var title by remember { mutableStateOf("") }
     var selectedEventType by remember { mutableStateOf(EventType.INTERVIEW) }
     var expanded by remember { mutableStateOf(false) }
 
@@ -87,21 +86,6 @@ fun AddEventDialog(
                     readOnly = true,
                     leadingIcon = {
                         Icon(Icons.Default.Business, contentDescription = null)
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(10.dp)
-                )
-
-                OutlinedTextField(
-                    value = title,
-                    onValueChange = { title = it },
-                    label = { Text("Event Title") },
-                    placeholder = { Text(PlacementEvent.DEFAULT_TITLE_FALLBACK) },
-                    supportingText = {
-                        Text("Defaults to '-------' if left blank")
-                    },
-                    leadingIcon = {
-                        Icon(Icons.Default.Title, contentDescription = null)
                     },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(10.dp)
@@ -212,7 +196,6 @@ fun AddEventDialog(
             Button(
                 onClick = {
                     if (dateString.isNotBlank() && timeString.isNotBlank()) {
-                        val finalTitle = title.trim().ifBlank { PlacementEvent.DEFAULT_TITLE_FALLBACK }
                         val finalDeadlineDate = if (hasDeadline) deadlineDate.trim().ifBlank { null } else null
                         val finalDeadlineTime = if (hasDeadline) {
                             PlacementEvent.normalizeDeadlineTime(finalDeadlineDate, deadlineTime.trim().ifBlank { null })
@@ -220,8 +203,8 @@ fun AddEventDialog(
 
                         val event = PlacementEvent(
                             notificationKey = UUID.randomUUID().toString(),
-                            company = companyName.trim(),
-                            title = finalTitle,
+                            company = companyName.trim().ifBlank { PlacementEvent.DEFAULT_COMPANY_FALLBACK },
+                            title = "",
                             eventType = selectedEventType,
                             date = dateString.trim(),
                             startTime = timeString.trim(),
