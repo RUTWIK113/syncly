@@ -1,7 +1,7 @@
 {
-  "versionCode": 17,
-  "versionName": "1.1.7",
-  "changelog": "• Two Event Creation Methods (Method A & B) with standardized Native Pickers\n• Event Title with '-------' fallback and Deadline 23:00 normalization\n• Telegram-Style Past Events Archive\n• Placement Vault 2xN preview grid and pale green Applied tracking\n• Reliable 30-min Alarm Reminders with Stop and 5m/10m Snooze\n• Device Reboot Recovery",
+  "versionCode": 18,
+  "versionName": "v1.1.7 beta",
+  "changelog": "• Multi-event parsing engine (PPT, OA, Resume, Registration)\n• Automatic 23:00 deadline fallback & '-------' fallback for missing company\n• Full persistent internal storage: all events and settings automatically preserved across updates\n• Standardized Native Pickers for Date & Time\n• Telegram-Style Past Events Archive & Placement Vault 2xN preview grid",
   "downloadUrl": "https://rutwik113.github.io/syncly/syncly_v1.1.7.apk",
   "isMandatory": false
 }

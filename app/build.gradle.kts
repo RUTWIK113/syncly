@@ -15,8 +15,8 @@ android {
         applicationId = "com.ppicalendar.app"
         minSdk = 26
         targetSdk = 34
-        versionCode = 17
-        versionName = "1.1.7"
+        versionCode = 18
+        versionName = "1.1.7 beta"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -73,10 +73,9 @@ android {
     }
 
     applicationVariants.all {
-        val variant = this
         outputs.all {
             if (this is com.android.build.gradle.internal.api.BaseVariantOutputImpl) {
-                outputFileName = "syncly_v${variant.versionName}.apk"
+                outputFileName = "syncly_v1.1.7.apk"
             }
         }
     }

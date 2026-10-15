@@ -11,6 +11,7 @@ import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import com.ppicalendar.app.R
+import com.ppicalendar.app.domain.model.AppUpdateInfo
 import com.ppicalendar.app.domain.model.PlacementEvent
 import com.ppicalendar.app.presentation.MainActivity
 
@@ -24,6 +25,7 @@ class NotificationHelper(private val context: Context) {
         const val ACTION_CONFIRM_EVENT = "com.ppicalendar.app.ACTION_CONFIRM_EVENT"
         const val ACTION_DISMISS_EVENT = "com.ppicalendar.app.ACTION_DISMISS_EVENT"
         const val EXTRA_EVENT_ID = "extra_placement_event_id"
+        const val NOTIFICATION_ID_UPDATE = 9999
     }
 
     init {
@@ -222,6 +224,49 @@ class NotificationHelper(private val context: Context) {
     fun cancelNotification(notificationId: Int) {
         val notificationManager = NotificationManagerCompat.from(context)
         notificationManager.cancel(notificationId)
+    }
+
+    fun showAppUpdateNotification(updateInfo: AppUpdateInfo) {
+        val notificationManager = NotificationManagerCompat.from(context)
+
+        val downloadIntent = Intent(Intent.ACTION_VIEW, Uri.parse(updateInfo.downloadUrl)).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK
+        }
+        val downloadPendingIntent = PendingIntent.getActivity(
+            context,
+            9999,
+            downloadIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val versionDisplay = if (updateInfo.versionName.startsWith("v", ignoreCase = true)) {
+            updateInfo.versionName
+        } else {
+            "v${updateInfo.versionName}"
+        }
+
+        val title = "🚀 Syncly Update Available: $versionDisplay"
+        val message = "A new version of Syncly ($versionDisplay) is ready. Tap to download!"
+
+        val builder = NotificationCompat.Builder(context, CHANNEL_ALERTS_ID)
+            .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .setContentTitle(title)
+            .setContentText(message)
+            .setStyle(
+                NotificationCompat.BigTextStyle()
+                    .setBigContentTitle(title)
+                    .bigText("${updateInfo.changelog}\n\nTap 'Update Now' to download.")
+            )
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setAutoCancel(true)
+            .setContentIntent(downloadPendingIntent)
+            .addAction(0, "⬇️ Update Now", downloadPendingIntent)
+
+        try {
+            notificationManager.notify(NOTIFICATION_ID_UPDATE, builder.build())
+        } catch (e: SecurityException) {
+            // Permission handling
+        }
     }
 
     fun showEventReminderNotification(

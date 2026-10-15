@@ -181,6 +181,9 @@ class MainViewModel(
             try {
                 val update = container.checkAppUpdateUseCase()
                 _appUpdateState.value = update
+                if (update != null) {
+                    container.notificationHelper.showAppUpdateNotification(update)
+                }
                 if (isManualCheck && update == null) {
                     _uiEvents.emit(UiNotification("✓ You are on the latest version of Syncly!"))
                 }
