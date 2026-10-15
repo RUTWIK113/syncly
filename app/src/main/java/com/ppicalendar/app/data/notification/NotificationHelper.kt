@@ -5,6 +5,7 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.media.RingtoneManager
 import android.net.Uri
 import android.os.Build
 import androidx.core.app.NotificationCompat
@@ -50,13 +51,22 @@ class NotificationHelper(private val context: Context) {
                 description = context.getString(R.string.channel_calendar_sync_desc)
             }
             
+            val alertSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
+                ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+            val audioAttributes = android.media.AudioAttributes.Builder()
+                .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                .setUsage(android.media.AudioAttributes.USAGE_ALARM)
+                .build()
+
             val remindersChannel = NotificationChannel(
                 CHANNEL_REMINDERS_ID,
-                "Event Reminders",
+                "Placement Alarm Reminders",
                 NotificationManager.IMPORTANCE_HIGH
             ).apply {
-                description = "Reminders for upcoming placement events"
+                description = "Alarm-style reminders for upcoming placement events (30m prior)"
                 enableVibration(true)
+                vibrationPattern = longArrayOf(0, 800, 400, 800)
+                setSound(alertSound, audioAttributes)
             }
 
             notificationManager.createNotificationChannel(alertsChannel)
@@ -214,21 +224,34 @@ class NotificationHelper(private val context: Context) {
         notificationManager.cancel(notificationId)
     }
 
-    fun showEventReminderNotification(title: String, company: String, venue: String?, time: String) {
+    fun showEventReminderNotification(
+        eventId: Long = 0L,
+        title: String,
+        company: String,
+        venue: String?,
+        time: String,
+        date: String = ""
+    ) {
         val notificationManager = NotificationManagerCompat.from(context)
 
-        val contentIntent = Intent(context, MainActivity::class.java).apply {
+        val fullScreenIntent = Intent(context, com.ppicalendar.app.presentation.AlarmRingingActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            putExtra("eventId", eventId)
+            putExtra("company", company)
+            putExtra("title", title)
+            putExtra("venue", venue)
+            putExtra("time", time)
+            putExtra("date", date)
         }
-        val contentPendingIntent = PendingIntent.getActivity(
+        val fullScreenPendingIntent = PendingIntent.getActivity(
             context,
-            System.currentTimeMillis().toInt(),
-            contentIntent,
+            (eventId + 80000).toInt(),
+            fullScreenIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
         val body = buildString {
-            append("Starting in 30 minutes at $time")
+            append("Starts in 30 minutes at $time")
             if (!venue.isNullOrBlank()) append("\n📍 Venue: $venue")
         }
 
@@ -237,14 +260,56 @@ class NotificationHelper(private val context: Context) {
             .setContentTitle("⏰ Reminder: $company • $title")
             .setContentText(body)
             .setStyle(NotificationCompat.BigTextStyle().bigText(body))
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setPriority(NotificationCompat.PRIORITY_MAX)
+            .setCategory(NotificationCompat.CATEGORY_ALARM)
             .setAutoCancel(true)
-            .setContentIntent(contentPendingIntent)
+            .setFullScreenIntent(fullScreenPendingIntent, true)
+            .setContentIntent(fullScreenPendingIntent)
 
         try {
-            notificationManager.notify((System.currentTimeMillis() % 10000).toInt(), builder.build())
+            notificationManager.notify((eventId + 50000).toInt(), builder.build())
         } catch (e: SecurityException) {
             // Permission handling
+        }
+    }
+
+    fun scheduleCustomAlarm(
+        eventId: Long,
+        company: String,
+        title: String,
+        venue: String?,
+        date: String,
+        time: String,
+        triggerEpochMillis: Long
+    ) {
+        try {
+            val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as android.app.AlarmManager
+            val intent = Intent(context, EventReminderReceiver::class.java).apply {
+                putExtra("eventId", eventId)
+                putExtra("title", title)
+                putExtra("company", company)
+                putExtra("venue", venue)
+                putExtra("time", time)
+                putExtra("date", date)
+            }
+            val pendingIntent = PendingIntent.getBroadcast(
+                context,
+                (eventId * 100 + (System.currentTimeMillis() % 100)).toInt(),
+                intent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                if (alarmManager.canScheduleExactAlarms()) {
+                    alarmManager.setExactAndAllowWhileIdle(android.app.AlarmManager.RTC_WAKEUP, triggerEpochMillis, pendingIntent)
+                } else {
+                    alarmManager.setAndAllowWhileIdle(android.app.AlarmManager.RTC_WAKEUP, triggerEpochMillis, pendingIntent)
+                }
+            } else {
+                alarmManager.setExactAndAllowWhileIdle(android.app.AlarmManager.RTC_WAKEUP, triggerEpochMillis, pendingIntent)
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 
@@ -257,27 +322,15 @@ class NotificationHelper(private val context: Context) {
             val reminderTime = eventDateTime.minusMinutes(30).atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
 
             if (reminderTime > System.currentTimeMillis()) {
-                val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as android.app.AlarmManager
-                val intent = Intent(context, EventReminderReceiver::class.java).apply {
-                    putExtra("title", event.eventType.displayName)
-                    putExtra("company", event.company)
-                    putExtra("venue", event.venue)
-                    putExtra("time", event.startTime)
-                }
-                val pendingIntent = PendingIntent.getBroadcast(
-                    context,
-                    event.id.toInt(),
-                    intent,
-                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                scheduleCustomAlarm(
+                    eventId = event.id,
+                    company = event.company,
+                    title = event.formattedTitle,
+                    venue = event.venue,
+                    date = event.date,
+                    time = event.startTime,
+                    triggerEpochMillis = reminderTime
                 )
-
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                    if (alarmManager.canScheduleExactAlarms()) {
-                        alarmManager.setExactAndAllowWhileIdle(android.app.AlarmManager.RTC_WAKEUP, reminderTime, pendingIntent)
-                    }
-                } else {
-                    alarmManager.setExactAndAllowWhileIdle(android.app.AlarmManager.RTC_WAKEUP, reminderTime, pendingIntent)
-                }
             }
         } catch (e: Exception) {
             e.printStackTrace()

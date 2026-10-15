@@ -2,6 +2,7 @@
 *.apk
 !docs/*.apk
 !public/*.apk
+!public/docs/*.apk
 *.aar
 *.ap_
 *.aab

@@ -1,5 +1,9 @@
 package com.ppicalendar.app.presentation.dialogs
 
+import android.graphics.Color
+import android.text.method.LinkMovementMethod
+import android.text.util.Linkify
+import android.widget.TextView
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -21,10 +25,8 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.ppicalendar.app.domain.model.EventType
 import com.ppicalendar.app.domain.model.PlacementEvent
-import android.widget.TextView
-import android.text.util.Linkify
-import android.text.method.LinkMovementMethod
-import android.graphics.Color
+import com.ppicalendar.app.presentation.components.NativeDatePickerField
+import com.ppicalendar.app.presentation.components.NativeTimePickerField
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -34,10 +36,14 @@ fun EventDetailDialog(
     onSave: (PlacementEvent, Boolean) -> Unit
 ) {
     var company by remember { mutableStateOf(event.company) }
+    var title by remember { mutableStateOf(if (event.title == PlacementEvent.DEFAULT_TITLE_FALLBACK) "" else event.title) }
     var eventType by remember { mutableStateOf(event.eventType) }
     var date by remember { mutableStateOf(event.date) }
     var startTime by remember { mutableStateOf(event.startTime) }
     var endTime by remember { mutableStateOf(event.endTime ?: "") }
+    var hasDeadline by remember { mutableStateOf(!event.deadlineDate.isNullOrBlank()) }
+    var deadlineDate by remember { mutableStateOf(event.deadlineDate ?: "") }
+    var deadlineTime by remember { mutableStateOf(event.deadlineTime ?: PlacementEvent.DEFAULT_DEADLINE_TIME) }
     var venue by remember { mutableStateOf(event.venue ?: "") }
     var meetingUrl by remember { mutableStateOf(event.meetingUrl ?: "") }
     var description by remember { mutableStateOf(event.description ?: "") }
@@ -53,12 +59,10 @@ fun EventDetailDialog(
             modifier = Modifier.fillMaxSize(),
             color = MaterialTheme.colorScheme.background
         ) {
-            Column(
-                modifier = Modifier.fillMaxSize()
-            ) {
+            Column(modifier = Modifier.fillMaxSize()) {
                 // Top App Bar
                 TopAppBar(
-                    title = { Text("Event Details", fontWeight = FontWeight.Bold) },
+                    title = { Text("Update Event", fontWeight = FontWeight.Bold) },
                     navigationIcon = {
                         IconButton(onClick = onDismiss) {
                             Icon(Icons.Default.Close, contentDescription = "Close")
@@ -79,38 +83,42 @@ fun EventDetailDialog(
                 ) {
                     Spacer(modifier = Modifier.height(8.dp))
 
-                    // Event Card as Heading
-                    com.ppicalendar.app.presentation.components.EventCard(
-                        event = event.copy(company = company, eventType = eventType, date = date, startTime = startTime, endTime = endTime, venue = venue, meetingUrl = meetingUrl, description = description),
-                        onConfirm = {},
-                        onEdit = {},
-                        onDismiss = {},
-                        onDelete = {}
-                    )
-
-                    HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
-
+                    // Company Name
                     OutlinedTextField(
                         value = company,
                         onValueChange = { company = it },
-                        label = { Text("Company *") },
+                        label = { Text("Company Name *") },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true
                     )
 
-                    // Event Type Selector
-                    Column {
+                    // Event Title
+                    OutlinedTextField(
+                        value = title,
+                        onValueChange = { title = it },
+                        label = { Text("Event Title") },
+                        placeholder = { Text("------- (Defaults if empty)") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
+                    )
+
+                    // Event Type Selector (clickable anywhere on the box or arrow)
+                    Box(modifier = Modifier.fillMaxWidth()) {
                         OutlinedTextField(
                             value = eventType.displayName,
                             onValueChange = {},
                             readOnly = true,
                             label = { Text("Event Type") },
                             trailingIcon = {
-                                IconButton(onClick = { eventTypeMenuExpanded = !eventTypeMenuExpanded }) {
-                                    Icon(Icons.Default.ArrowDropDown, contentDescription = null)
-                                }
+                                Icon(
+                                    imageVector = Icons.Default.ArrowDropDown,
+                                    contentDescription = "Select Event Type",
+                                    modifier = Modifier.clickable { eventTypeMenuExpanded = true }
+                                )
                             },
-                            modifier = Modifier.fillMaxWidth().clickable { eventTypeMenuExpanded = !eventTypeMenuExpanded }
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { eventTypeMenuExpanded = true }
                         )
                         DropdownMenu(
                             expanded = eventTypeMenuExpanded,
@@ -128,37 +136,33 @@ fun EventDetailDialog(
                         }
                     }
 
-                    OutlinedTextField(
-                        value = date,
-                        onValueChange = { date = it },
-                        label = { Text("Date (YYYY-MM-DD) *") },
-                        placeholder = { Text("2026-10-25") },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true
+                    // Native Date Picker
+                    NativeDatePickerField(
+                        date = date,
+                        onDateSelected = { date = it },
+                        label = "Date *"
                     )
 
+                    // Native Time Pickers for Start and End Time
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        OutlinedTextField(
-                            value = startTime,
-                            onValueChange = { startTime = it },
-                            label = { Text("Start (HH:mm) *") },
-                            placeholder = { Text("18:00") },
-                            modifier = Modifier.weight(1f),
-                            singleLine = true
+                        NativeTimePickerField(
+                            time = startTime,
+                            onTimeSelected = { startTime = it },
+                            label = "Start Time *",
+                            modifier = Modifier.weight(1f)
                         )
-                        OutlinedTextField(
-                            value = endTime,
-                            onValueChange = { endTime = it },
-                            label = { Text("End (HH:mm)") },
-                            placeholder = { Text("19:30") },
-                            modifier = Modifier.weight(1f),
-                            singleLine = true
+                        NativeTimePickerField(
+                            time = endTime,
+                            onTimeSelected = { endTime = it },
+                            label = "End Time",
+                            modifier = Modifier.weight(1f)
                         )
                     }
 
+                    // Venue
                     OutlinedTextField(
                         value = venue,
                         onValueChange = { venue = it },
@@ -167,6 +171,7 @@ fun EventDetailDialog(
                         singleLine = true
                     )
 
+                    // Meeting / URL
                     OutlinedTextField(
                         value = meetingUrl,
                         onValueChange = { meetingUrl = it },
@@ -175,7 +180,40 @@ fun EventDetailDialog(
                         singleLine = true
                     )
 
-                    // Description / Notes Field with Clickable Links Support
+                    // Deadline Section
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { hasDeadline = !hasDeadline }
+                            .padding(vertical = 4.dp)
+                    ) {
+                        Checkbox(
+                            checked = hasDeadline,
+                            onCheckedChange = { hasDeadline = it }
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "Include Registration / Application Deadline",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+
+                    if (hasDeadline) {
+                        NativeDatePickerField(
+                            date = deadlineDate,
+                            onDateSelected = { deadlineDate = it },
+                            label = "Deadline Date *"
+                        )
+                        NativeTimePickerField(
+                            time = deadlineTime,
+                            onTimeSelected = { deadlineTime = it },
+                            label = "Deadline Time (Defaults to 23:00)"
+                        )
+                    }
+
+                    // Notes Section
                     if (!isEditingNote) {
                         Column(
                             modifier = Modifier
@@ -191,8 +229,8 @@ fun EventDetailDialog(
                                 modifier = Modifier.padding(bottom = 8.dp)
                             )
                             AndroidView(
-                                factory = { context ->
-                                    TextView(context).apply {
+                                factory = { ctx ->
+                                    TextView(ctx).apply {
                                         autoLinkMask = Linkify.WEB_URLS or Linkify.EMAIL_ADDRESSES or Linkify.PHONE_NUMBERS
                                         linksClickable = true
                                         movementMethod = LinkMovementMethod.getInstance()
@@ -212,7 +250,9 @@ fun EventDetailDialog(
                             value = description,
                             onValueChange = { description = it },
                             label = { Text("Description / Notes") },
-                            modifier = Modifier.fillMaxWidth().height(250.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(220.dp),
                             trailingIcon = {
                                 IconButton(onClick = { isEditingNote = false }) {
                                     Icon(Icons.Default.Check, contentDescription = "Done Editing")
@@ -241,12 +281,19 @@ fun EventDetailDialog(
                         }
                         Button(
                             onClick = {
+                                val finalTitle = if (title.isBlank()) PlacementEvent.DEFAULT_TITLE_FALLBACK else title.trim()
+                                val finalDeadlineDate = if (hasDeadline && deadlineDate.isNotBlank()) deadlineDate else null
+                                val finalDeadlineTime = PlacementEvent.normalizeDeadlineTime(finalDeadlineDate, deadlineTime)
+
                                 val updated = event.copy(
                                     company = company.trim(),
+                                    title = finalTitle,
                                     eventType = eventType,
                                     date = date.trim(),
                                     startTime = startTime.trim(),
                                     endTime = endTime.trim().ifBlank { null },
+                                    deadlineDate = finalDeadlineDate,
+                                    deadlineTime = finalDeadlineTime,
                                     venue = venue.trim().ifBlank { null },
                                     meetingUrl = meetingUrl.trim().ifBlank { null },
                                     description = description.trim().ifBlank { null }
@@ -255,7 +302,7 @@ fun EventDetailDialog(
                             },
                             enabled = company.isNotBlank() && date.isNotBlank() && startTime.isNotBlank()
                         ) {
-                            Text("Save & Update Calendar")
+                            Text("Save Update")
                         }
                     }
                 }

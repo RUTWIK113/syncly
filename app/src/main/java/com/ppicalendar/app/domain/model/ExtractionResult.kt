@@ -16,6 +16,9 @@ data class ExtractionResult(
     @SerialName("company")
     val company: String = "",
 
+    @SerialName("title")
+    val title: String = PlacementEvent.DEFAULT_TITLE_FALLBACK,
+
     @SerialName("event_type")
     val eventType: String = "",
 
@@ -27,6 +30,12 @@ data class ExtractionResult(
 
     @SerialName("end_time")
     val endTime: String = "",
+
+    @SerialName("deadline_date")
+    val deadlineDate: String = "",
+
+    @SerialName("deadline_time")
+    val deadlineTime: String = "",
 
     @SerialName("venue")
     val venue: String = "",

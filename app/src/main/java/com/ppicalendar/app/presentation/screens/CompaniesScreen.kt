@@ -96,9 +96,16 @@ fun CompaniesScreen(
 
     val totalPoints = remember(userPoints) { userPoints.sumOf { it.points } }
 
-    val filteredCompanies = companies.filter {
-        it.name.contains(searchQuery, ignoreCase = true) ||
-                (it.roleNames?.contains(searchQuery, ignoreCase = true) == true)
+    val filteredCompanies = remember(companies, searchQuery) {
+        companies
+            .filter {
+                it.name.contains(searchQuery, ignoreCase = true) ||
+                        (it.roleNames?.contains(searchQuery, ignoreCase = true) == true)
+            }
+            .sortedWith(
+                compareByDescending<CompanyProfile> { it.applied == true }
+                    .thenBy(String.CASE_INSENSITIVE_ORDER) { it.name }
+            )
     }
 
     Box(modifier = modifier.fillMaxSize()) {
@@ -636,12 +643,29 @@ fun CompanyVaultCard(
                 Spacer(modifier = Modifier.width(12.dp))
 
                 Column {
-                    Text(
-                        text = company.name,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = company.name,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = if (company.applied == true) Color(0xFF2E7D32) else MaterialTheme.colorScheme.onSurface
+                        )
+                        if (company.applied == true) {
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Surface(
+                                shape = RoundedCornerShape(4.dp),
+                                color = Color(0xFF2E7D32).copy(alpha = 0.12f)
+                            ) {
+                                Text(
+                                    text = "Applied",
+                                    color = Color(0xFF2E7D32),
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                )
+                            }
+                        }
+                    }
 
 
 

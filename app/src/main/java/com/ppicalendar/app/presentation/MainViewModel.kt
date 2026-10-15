@@ -11,6 +11,7 @@ import com.ppicalendar.app.domain.model.CalendarInfo
 import com.ppicalendar.app.domain.model.CompanyAttachment
 import com.ppicalendar.app.domain.model.CompanyProfile
 import com.ppicalendar.app.domain.model.EventStatus
+import com.ppicalendar.app.domain.model.EventType
 import com.ppicalendar.app.domain.model.PlacementEvent
 import com.ppicalendar.app.domain.usecase.NotificationProcessOutcome
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -414,6 +415,80 @@ class MainViewModel(
                     _uiEvents.emit(UiNotification("❌ Error: ${outcome.message}", isError = true))
                 }
             }
+        }
+    }
+
+    fun extractAndReview(message: String) {
+        viewModelScope.launch {
+            _isSimulating.value = true
+            try {
+                val settings = container.settingsRepository.getSettings()
+                val extractions = container.extractPlacementEventUseCase(
+                    text = message,
+                    referenceDate = LocalDate.now(),
+                    apiKey = if (settings.useAiExtraction) settings.geminiApiKey else "",
+                    forcePlacement = true
+                )
+                _isSimulating.value = false
+                if (extractions.isNotEmpty()) {
+                    val first = extractions.first()
+                    val resolvedDate = container.resolveDateUseCase.resolve(first.date, LocalDate.now())
+                    val eventType = EventType.fromString(first.eventType)
+                    val title = if (first.title.isBlank()) PlacementEvent.DEFAULT_TITLE_FALLBACK else first.title
+                    val deadlineDate = first.deadlineDate.ifBlank { null }
+                    val deadlineTime = PlacementEvent.normalizeDeadlineTime(deadlineDate, first.deadlineTime)
+
+                    val draftEvent = PlacementEvent(
+                        notificationKey = java.util.UUID.randomUUID().toString(),
+                        company = first.company.ifBlank { "Placement Notice" },
+                        title = title,
+                        eventType = eventType,
+                        date = resolvedDate,
+                        startTime = first.startTime,
+                        endTime = first.endTime.ifBlank { null },
+                        deadlineDate = deadlineDate,
+                        deadlineTime = deadlineTime,
+                        venue = first.venue.ifBlank { null },
+                        meetingUrl = first.meetingUrl.ifBlank { null },
+                        description = first.description.ifBlank { null },
+                        rawNotificationSnippet = message,
+                        status = EventStatus.PENDING_CONFIRMATION
+                    )
+                    val id = container.placementEventRepository.insertEvent(draftEvent)
+                    _selectedEventForEdit.value = draftEvent.copy(id = id)
+                    _isSimulatorOpen.value = false
+                } else {
+                    _uiEvents.emit(UiNotification("Could not extract placement events from message.", isError = true))
+                }
+            } catch (e: Exception) {
+                _isSimulating.value = false
+                _uiEvents.emit(UiNotification("Extraction error: ${e.message}", isError = true))
+            }
+        }
+    }
+
+    fun addQuickEvent(event: PlacementEvent) {
+        viewModelScope.launch {
+            if (event.date.isBlank() || event.startTime.isBlank()) {
+                _uiEvents.emit(UiNotification("❌ Date and start time are required.", isError = true))
+                return@launch
+            }
+            val canonicalEvent = event.copy(status = EventStatus.CREATED_IN_CALENDAR)
+            val savedId = container.placementEventRepository.insertEvent(canonicalEvent)
+            val createdEvent = canonicalEvent.copy(id = savedId)
+
+            if (createdEvent.company.isNotBlank() && createdEvent.company != "Personal") {
+                container.companyRepository.getOrCreateCompanyByName(createdEvent.company)
+            }
+
+            val calendarResult = container.createCalendarEventUseCase(createdEvent)
+            val calendarId = calendarResult.getOrNull() ?: -1L
+            if (calendarId > 0) {
+                container.placementEventRepository.updateEventStatus(savedId, EventStatus.CREATED_IN_CALENDAR, calendarId)
+            }
+
+            container.notificationHelper.scheduleEventReminder(createdEvent)
+            _uiEvents.emit(UiNotification("✅ Added '${createdEvent.formattedTitle}' to Calendar!"))
         }
     }
 

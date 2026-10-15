@@ -2,14 +2,10 @@ package com.ppicalendar.app.data.extractor
 
 import com.ppicalendar.app.domain.model.ExtractionResult
 import com.ppicalendar.app.domain.model.ExtractionResponse
+import com.ppicalendar.app.domain.model.PlacementEvent
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.booleanOrNull
-import kotlinx.serialization.json.doubleOrNull
-import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -65,7 +61,7 @@ class GeminiApiExtractor(
         val responseBody = response.body?.string() ?: throw IllegalStateException("Empty response from Gemini API")
 
         if (!response.isSuccessful) {
-            throw IllegalStateException("Gemini API error (HTTP $response.code): $responseBody")
+            throw IllegalStateException("Gemini API error (HTTP ${response.code}): $responseBody")
         }
 
         parseGeminiResponse(responseBody)
@@ -73,27 +69,27 @@ class GeminiApiExtractor(
 
     private fun buildPrompt(text: String, referenceDate: LocalDate): String {
         return """
-        You are a high-precision placement message analyzer for IIT Madras campus placement notifications.
+        You are a high-precision placement and career message analyzer.
         
         Reference current date: ${referenceDate} (Day of week: ${referenceDate.dayOfWeek}).
         
         CRITICAL RULES:
-        1. Extract EVERY distinct event from the message as a SEPARATE object. A single message often contains MULTIPLE events.
-        2. Common multi-event patterns you MUST split into separate events:
+        1. Extract EVERY distinct event from the message as a SEPARATE object. A single message often contains MULTIPLE events (e.g. PPT, OA, Interview, Deadline).
+        2. Common multi-event patterns you MUST split:
            - "PPT: 6PM, 9th Oct" + "Test Date: 6:45PM, 9th Oct" = TWO events (PRE_PLACEMENT_TALK + ONLINE_ASSESSMENT)
-           - "GForm Deadline: 7th Oct EOD" = ONE event (REGISTRATION_DEADLINE, start_time = "23:00")
-           - "Registration link" with a deadline = ONE event (REGISTRATION_DEADLINE) with the link as meeting_url
-           - "PPT time: 7pm, 07/10/2026" = ONE event (PRE_PLACEMENT_TALK)
-        3. ALWAYS set is_event = true for any event that has a company name and relates to placements/recruitment.
-        4. Extract the company name from patterns like "Company Name : X", "Company: X", or "*Company: X*".
-        5. Resolve dates: "07/10/2026" = "2026-10-07", "7th October" = "${referenceDate.year}-10-07", "EOD" = start_time "23:00".
-        6. Normalize times to 24-hour HH:mm: "7pm" = "19:00", "6:45PM" = "18:45", "6PM - 6:45PM" = start "18:00" end "18:45".
-        7. For venues, use campus abbreviations (CRC, RJN, RMN, MSB, ESB, CLT, SAC) if mentioned. Include room numbers (e.g. "RMN 101"). Default to "Online" if no physical venue.
-        8. Attach links intelligently: registration/gform links go to REGISTRATION_DEADLINE events, WhatsApp group links go to the main event, test platform links go to OA events.
-        9. Never invent information. If date/time is missing, leave as empty string "".
-        10. For date format DD/MM/YYYY (Indian format): "07/10/2026" means day=07, month=10(October), year=2026 -> "2026-10-07".
+           - "GForm Deadline: 7th Oct EOD" = ONE event (REGISTRATION with deadline_date="YYYY-10-07", deadline_time="23:00")
+        3. ALWAYS set is_event = true for any event that relates to campus placements, recruitment, tests, talks, or deadlines.
+        4. Extract the company name (e.g. "Squarepoint Capital", "Google", "Barclays"). If no company is mentioned, use sender or empty string.
+        5. Extract the event title (e.g. role title "Software Developer", "Desk Quant Analyst", or session topic). If no specific title is identifiable, set title to exactly "-------" (seven hyphens). NEVER save empty title.
+        6. Distinguish event date/time from registration/resume deadline:
+           - Event start time: HH:mm (24-hour format). If missing, leave as empty string "". NEVER assign 23:00 to event start times!
+           - If a registration or submission deadline is explicitly specified, put it in deadline_date (YYYY-MM-DD). If deadline date is present but deadline time is omitted, default deadline_time to "23:00".
+        7. Normalize times to 24-hour HH:mm: "7pm" = "19:00", "6:45PM" = "18:45", "6PM - 6:45PM" = start "18:00" end "18:45".
+        8. For venues, capture campus lecture halls (CRC, RJN, RMN, MSB, ESB, CLT, SAC, etc.) or "Online".
+        9. Attach links intelligently: registration form links go to REGISTRATION, test links go to ONLINE_ASSESSMENT, WhatsApp group links to meeting_url.
+        10. Date format DD/MM/YYYY (Indian format): "07/10/2026" means day=07, month=10 (October), year=2026 -> "2026-10-07".
         
-        Supported event types: PPI, PRE_PLACEMENT_TALK, ONLINE_ASSESSMENT, INTERVIEW, COMPANY_SESSION, REGISTRATION_DEADLINE, RESUME_DEADLINE, OTHER
+        Supported event types: PRE_PLACEMENT_TALK, ONLINE_ASSESSMENT, RESUME_SUBMISSION, REGISTRATION, INTERVIEW, GROUP_DISCUSSION, SHORTLIST_ANNOUNCEMENT, COMPANY_BRIEFING, GENERAL_EVENT, PPI, OTHER
         
         Return STRICT JSON:
         {
@@ -101,10 +97,13 @@ class GeminiApiExtractor(
             {
               "is_event": true,
               "company": "Company Name",
+              "title": "Role / Event Title or -------",
               "event_type": "PRE_PLACEMENT_TALK",
               "date": "YYYY-MM-DD",
               "start_time": "HH:mm",
               "end_time": "HH:mm",
+              "deadline_date": "YYYY-MM-DD",
+              "deadline_time": "HH:mm",
               "venue": "Venue or Online",
               "meeting_url": "URL if present",
               "description": "Short summary",
@@ -114,7 +113,7 @@ class GeminiApiExtractor(
           ]
         }
         
-        WhatsApp Notification Text:
+        Notification / Message Text:
         ---
         $text
         ---
@@ -140,12 +139,12 @@ class GeminiApiExtractor(
 
         return try {
             val response = json.decodeFromString<ExtractionResponse>(cleanJson)
-            response.events
+            response.events.map { normalizeResult(it) }
         } catch (e: Exception) {
             try {
-                // Try old format (single object)
+                // Try single object format
                 val result = json.decodeFromString<ExtractionResult>(cleanJson)
-                listOf(result)
+                listOf(normalizeResult(result))
             } catch (e2: Exception) {
                 // Manual fallback parsing if strict JSON deserialization fails
                 val jsonObj = JSONObject(cleanJson)
@@ -155,12 +154,12 @@ class GeminiApiExtractor(
                     if (eventsArray != null) {
                         for (i in 0 until eventsArray.length()) {
                             val eventObj = eventsArray.optJSONObject(i) ?: continue
-                            list.add(parseSingleEvent(eventObj))
+                            list.add(normalizeResult(parseSingleEvent(eventObj)))
                         }
                     }
                     list
                 } else {
-                    listOf(parseSingleEvent(jsonObj))
+                    listOf(normalizeResult(parseSingleEvent(jsonObj)))
                 }
             }
         }
@@ -171,18 +170,42 @@ class GeminiApiExtractor(
             jsonObj.optInt("incentive_points")
         } else null
 
+        val rawTitle = jsonObj.optString("title", "").trim()
+        val title = if (rawTitle.isBlank()) PlacementEvent.DEFAULT_TITLE_FALLBACK else rawTitle
+
+        val deadlineDate = jsonObj.optString("deadline_date", "").trim()
+        val rawDeadlineTime = jsonObj.optString("deadline_time", "").trim()
+        val deadlineTime = if (deadlineDate.isNotBlank() && rawDeadlineTime.isBlank()) {
+            PlacementEvent.DEFAULT_DEADLINE_TIME
+        } else {
+            rawDeadlineTime
+        }
+
         return ExtractionResult(
             isEvent = jsonObj.optBoolean("is_event", false),
             company = jsonObj.optString("company", ""),
+            title = title,
             eventType = jsonObj.optString("event_type", "OTHER"),
             date = jsonObj.optString("date", ""),
             startTime = jsonObj.optString("start_time", ""),
             endTime = jsonObj.optString("end_time", ""),
+            deadlineDate = deadlineDate,
+            deadlineTime = deadlineTime,
             venue = jsonObj.optString("venue", ""),
             meetingUrl = jsonObj.optString("meeting_url", ""),
             description = jsonObj.optString("description", ""),
             incentivePoints = points,
             confidence = jsonObj.optDouble("confidence", 0.5)
         )
+    }
+
+    private fun normalizeResult(res: ExtractionResult): ExtractionResult {
+        val title = if (res.title.isBlank()) PlacementEvent.DEFAULT_TITLE_FALLBACK else res.title.trim()
+        val deadlineTime = if (res.deadlineDate.isNotBlank() && res.deadlineTime.isBlank()) {
+            PlacementEvent.DEFAULT_DEADLINE_TIME
+        } else {
+            res.deadlineTime
+        }
+        return res.copy(title = title, deadlineTime = deadlineTime)
     }
 }

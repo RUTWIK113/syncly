@@ -69,6 +69,7 @@ import com.ppicalendar.app.R
 import com.ppicalendar.app.data.notification.NotificationHelper
 import com.ppicalendar.app.presentation.dialogs.AppRatingDialog
 import com.ppicalendar.app.presentation.dialogs.EventDetailDialog
+import com.ppicalendar.app.presentation.dialogs.EventCreationDialog
 import com.ppicalendar.app.presentation.dialogs.TestSimulatorDialog
 import com.ppicalendar.app.presentation.screens.CompaniesScreen
 import com.ppicalendar.app.presentation.screens.HomeScreen
@@ -325,13 +326,16 @@ fun MainAppContent(viewModel: MainViewModel) {
         )
     }
 
-    // Message Simulator Dialog
+    // Event Creation Dialog (Method A: Message Parsing | Method B: Quick Form)
     if (isSimulatorOpen) {
-        TestSimulatorDialog(
+        EventCreationDialog(
             isLoading = isSimulating,
             onDismiss = { viewModel.closeSimulator() },
-            onSimulate = { sender, message ->
-                viewModel.simulateWhatsAppMessage(sender, message)
+            onExtractAndParse = { message ->
+                viewModel.extractAndReview(message)
+            },
+            onSaveQuickEvent = { event ->
+                viewModel.addQuickEvent(event)
             }
         )
     }

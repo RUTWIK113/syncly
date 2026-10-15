@@ -4,51 +4,21 @@ import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.ui.graphics.Color
-import com.ppicalendar.app.ui.theme.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarMonth
-import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.HourglassBottom
 import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Schedule
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -58,24 +28,23 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ppicalendar.app.domain.model.EventStatus
 import com.ppicalendar.app.domain.model.PlacementEvent
-import com.ppicalendar.app.ui.theme.PureBlack
-import com.ppicalendar.app.ui.theme.SynclyBorder
-import com.ppicalendar.app.ui.theme.SynclyPrimaryAmber
+import com.ppicalendar.app.ui.theme.Gray300
+import com.ppicalendar.app.ui.theme.Gray50
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun EventCard(
     event: PlacementEvent,
-    onConfirm: () -> Unit,
-    onEdit: () -> Unit,
-    onDismiss: () -> Unit,
-    onDelete: () -> Unit,
+    onConfirm: () -> Unit = {},
+    onEdit: () -> Unit = {},
+    onDismiss: () -> Unit = {},
+    onDelete: () -> Unit = {},
+    isPendingView: Boolean = false,
+    showActions: Boolean = true,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
-    var menuExpanded by remember { mutableStateOf(false) }
     var isExpanded by remember { mutableStateOf(false) }
-    val isPending = event.status == EventStatus.PENDING_CONFIRMATION
 
     Card(
         modifier = modifier
@@ -91,13 +60,13 @@ fun EventCard(
                 .fillMaxWidth()
                 .padding(horizontal = 14.dp, vertical = 10.dp)
         ) {
-            // Row 1: Company Name + Event Type Badge + Points Badge | Edit & Delete Options
+            // Row 1: Company Name + Event Type Badge | Edit & Delete Options
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Left: Company name + Type + Points (No icon beside company name)
+                // Left: Company name + Type
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.weight(1f),
@@ -126,8 +95,6 @@ fun EventCard(
                             modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                         )
                     }
-
-
                 }
 
                 // Right: Sync status indicator + Edit + Delete
@@ -169,11 +136,24 @@ fun EventCard(
                 }
             }
 
+            // Optional Sub-row: Title if specified and not fallback
+            if (event.title.isNotBlank() && event.title != PlacementEvent.DEFAULT_TITLE_FALLBACK) {
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = event.title,
+                    style = MaterialTheme.typography.bodySmall,
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.primary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+
             Spacer(modifier = Modifier.height(6.dp))
 
             // Row 2: In-line Date, Time, Location
             val formattedDate = if (event.date.isNotBlank()) com.ppicalendar.app.data.extractor.DateTimeParser.formatIndianDate(event.date) else "Date missing"
-            val timeDisplay = com.ppicalendar.app.data.extractor.DateTimeParser.formatIndianTimeRange(event.startTime, event.endTime)
+            val timeDisplay = if (event.startTime.isNotBlank()) com.ppicalendar.app.data.extractor.DateTimeParser.formatIndianTimeRange(event.startTime, event.endTime) else "Time missing"
             val venueDisplay = event.venue?.trim()
 
             Row(
@@ -237,7 +217,29 @@ fun EventCard(
                 }
             }
 
-            // Row 3: Link Pill (if present)
+            // Deadline Row (if present)
+            if (!event.deadlineDate.isNullOrBlank()) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.HourglassBottom,
+                        contentDescription = "Deadline",
+                        tint = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.size(12.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    val formattedDeadlineDate = com.ppicalendar.app.data.extractor.DateTimeParser.formatIndianDate(event.deadlineDate)
+                    val deadlineTime = event.deadlineTime ?: PlacementEvent.DEFAULT_DEADLINE_TIME
+                    Text(
+                        text = "Deadline: $formattedDeadlineDate, $deadlineTime",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+            }
+
+            // Link Pill (if present)
             if (!event.meetingUrl.isNullOrBlank()) {
                 val rawUrl = event.meetingUrl
                 val displayUrl = rawUrl
@@ -281,35 +283,30 @@ fun EventCard(
                 }
             }
 
-            // Row 4: Actions (shown whenever not yet synced to calendar)
-            val isInCalendar = event.status == EventStatus.CREATED_IN_CALENDAR
-            val isDismissed = event.status == EventStatus.DISMISSED
-            if (!isInCalendar) {
+            // Action Buttons
+            if (showActions) {
                 Spacer(modifier = Modifier.height(8.dp))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.End,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    if (isDismissed) {
-                        androidx.compose.foundation.layout.Box {
-                            IconButton(onClick = { menuExpanded = true }) {
-                                Icon(Icons.Default.MoreVert, contentDescription = "More options")
-                            }
-                            DropdownMenu(
-                                expanded = menuExpanded,
-                                onDismissRequest = { menuExpanded = false }
-                            ) {
-                                DropdownMenuItem(
-                                    text = { Text("Add to Calendar") },
-                                    onClick = { 
-                                        menuExpanded = false
-                                        onConfirm() 
-                                    }
-                                )
-                            }
+                    if (isPendingView) {
+                        // PRD Section 5.1: Replace Dismiss and Add to Calendar with Update button
+                        Button(
+                            onClick = onEdit,
+                            shape = RoundedCornerShape(8.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.primary,
+                                contentColor = MaterialTheme.colorScheme.onPrimary
+                            ),
+                            modifier = Modifier.height(32.dp)
+                        ) {
+                            Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(14.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Update", fontWeight = FontWeight.Bold, fontSize = 12.sp)
                         }
-                    } else {
+                    } else if (event.status != EventStatus.CREATED_IN_CALENDAR) {
                         OutlinedButton(
                             onClick = onDismiss,
                             shape = RoundedCornerShape(8.dp),
@@ -318,9 +315,9 @@ fun EventCard(
                         ) {
                             Text("Dismiss", color = MaterialTheme.colorScheme.onSurface, fontSize = 12.sp)
                         }
-    
+
                         Spacer(modifier = Modifier.width(8.dp))
-    
+
                         Button(
                             onClick = onConfirm,
                             shape = RoundedCornerShape(8.dp),
@@ -338,9 +335,10 @@ fun EventCard(
                 }
             }
             
+            // Expanded Raw Snippet with vertical scrolling
             if (isExpanded && !event.rawNotificationSnippet.isNullOrBlank()) {
                 Spacer(modifier = Modifier.height(12.dp))
-                androidx.compose.material3.HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = "Original Message:",

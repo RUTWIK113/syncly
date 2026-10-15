@@ -2,6 +2,7 @@ package com.ppicalendar.app.data.extractor
 
 import com.ppicalendar.app.domain.model.EventType
 import com.ppicalendar.app.domain.model.ExtractionResult
+import com.ppicalendar.app.domain.model.PlacementEvent
 import com.ppicalendar.app.domain.usecase.ResolveDateUseCase
 import java.time.LocalDate
 import java.util.Locale
@@ -14,7 +15,7 @@ class RuleBasedExtractor(
     private val commonCompanies = listOf(
         "Computer Centre IIT Madras", "Computer Centre", "Computer Center",
         "UG Mechanical Placements", "ME UG Placements", "Placement Cell IITM", "Placement Cell",
-        "Google", "Microsoft", "Jane Street", "Apple", "Amazon", "Uber", "Goldman Sachs",
+        "Google", "Microsoft", "Squarepoint Capital", "Squarepoint", "Jane Street", "Apple", "Amazon", "Uber", "Goldman Sachs",
         "Morgan Stanley", "DE Shaw", "D.E. Shaw", "Tower Research", "Graviton", "Optiver",
         "Citadel", "Jump Trading", "Qualcomm", "Texas Instruments", "TI", "Intel", "Nvidia",
         "Samsung", "Adobe", "Oracle", "Cisco", "Salesforce", "Sprinklr", "Stripe", "McKinsey",
@@ -23,7 +24,7 @@ class RuleBasedExtractor(
         "ExxonMobil", "Airbus", "Boeing", "ISRO", "Tata Steel", "Tata Motors", "L&T",
         "Reliance", "Flipkart", "Swiggy", "Zomato", "Meesho", "CRED", "Razorpay", "PhonePe",
         "Paytm", "Groww", "Zerodha", "Rubrik", "Cohesity", "Databricks", "Snowflake", "Palantir",
-        "Honda R&D", "Honda", "Hyundai", "Mercedes-Benz", "BMW", "Toyota", "Bajaj", "TVS"
+        "Honda R&D", "Honda", "Hyundai", "Mercedes-Benz", "BMW", "Toyota", "Bajaj", "TVS", "Barclays"
     )
 
     private val venues = listOf(
@@ -50,11 +51,8 @@ class RuleBasedExtractor(
 
         val eventType = detectEventType(text)
         val company = detectCompany(text)
-        var (startTime, endTime) = DateTimeParser.extractTimeRange(text)
-        
-        if (startTime.isBlank() && eventType == EventType.REGISTRATION_DEADLINE) {
-            startTime = "23:00"
-        }
+        val title = detectTitle(text)
+        val (startTime, endTime) = DateTimeParser.extractTimeRange(text)
 
         val rawDate = detectDateString(text)
         val resolvedDate = resolveDateUseCase.resolve(rawDate, referenceDate)
@@ -62,6 +60,13 @@ class RuleBasedExtractor(
         val meetingUrl = detectMeetingUrl(text)
         val description = extractDescription(text, company, eventType.displayName)
         val incentivePoints = detectIncentivePoints(text)
+
+        // Deadline extraction
+        val (rawDeadlineDate, deadlineTimeExplicit) = detectDeadline(text)
+        val deadlineDate = if (rawDeadlineDate.isNotBlank()) resolveDateUseCase.resolve(rawDeadlineDate, referenceDate) else ""
+        val deadlineTime = if (deadlineDate.isNotBlank()) {
+            if (deadlineTimeExplicit.isNotBlank()) deadlineTimeExplicit else PlacementEvent.DEFAULT_DEADLINE_TIME
+        } else ""
 
         val isPlacementEvent = company.isNotBlank() && (
                 forcePlacement ||
@@ -87,16 +92,51 @@ class RuleBasedExtractor(
         return ExtractionResult(
             isEvent = isPlacementEvent,
             company = company,
+            title = if (title.isBlank()) PlacementEvent.DEFAULT_TITLE_FALLBACK else title,
             eventType = eventType.name,
             date = resolvedDate,
             startTime = startTime,
             endTime = endTime,
+            deadlineDate = deadlineDate,
+            deadlineTime = deadlineTime,
             venue = venue,
             meetingUrl = meetingUrl,
             description = description,
             incentivePoints = incentivePoints,
             confidence = (confidenceScore * 100).toInt() / 100.0
         )
+    }
+
+    private fun detectTitle(text: String): String {
+        val patterns = listOf(
+            Regex("""(?:Profile(?:\s*\d*)?|Role|Position|Job\s*Title)\s*[:\-]\s*([A-Za-z0-9\s()/,+.\-_]{2,40})""", RegexOption.IGNORE_CASE),
+            Regex("""(?:Session|Topic)\s*[:\-]\s*([A-Za-z0-9\s()/,+.\-_]{2,40})""", RegexOption.IGNORE_CASE)
+        )
+        for (pattern in patterns) {
+            val match = pattern.find(text)
+            if (match != null) {
+                val candidate = match.groupValues[1].lines().first().replace("*", "").trim()
+                if (candidate.isNotBlank() && !candidate.startsWith("http", ignoreCase = true)) {
+                    return candidate
+                }
+            }
+        }
+        return PlacementEvent.DEFAULT_TITLE_FALLBACK
+    }
+
+    private fun detectDeadline(text: String): Pair<String, String> {
+        val deadlinePattern = Regex("""(?:Deadline|Last\s+date|Register\s+by|Registration\s+closes?|GForm\s+Deadline)\s*[:\-]?\s*([A-Za-z0-9\s,/\.\-]{3,30})""", RegexOption.IGNORE_CASE)
+        val match = deadlinePattern.find(text) ?: return Pair("", "")
+        val rawSnippet = match.groupValues[1]
+
+        val rawDate = detectDateString(rawSnippet)
+        val (startTime, _) = DateTimeParser.extractTimeRange(rawSnippet)
+        val deadlineTime = when {
+            rawSnippet.contains("EOD", ignoreCase = true) || rawSnippet.contains("end of day", ignoreCase = true) -> "23:00"
+            startTime.isNotBlank() -> startTime
+            else -> ""
+        }
+        return Pair(rawDate, deadlineTime)
     }
 
     private fun detectIncentivePoints(text: String): Int? {
@@ -130,31 +170,40 @@ class RuleBasedExtractor(
             Regex("""\b(oa|online[\s\-]?assessment|coding[\s\-]?round|coding[\s\-]?test|technical[\s\-]?assessment|hackerearth|hackerrank|mettl)\b""", RegexOption.IGNORE_CASE).containsMatchIn(text) ->
                 EventType.ONLINE_ASSESSMENT
 
-            Regex("""\b(interview|gd|group[\s\-]?discussion|personal[\s\-]?interview|tech[\s\-]?interview|hr[\s\-]?interview)\b""", RegexOption.IGNORE_CASE).containsMatchIn(text) ->
+            Regex("""\b(interview|tech[\s\-]?interview|hr[\s\-]?interview|interview\s+slot)\b""", RegexOption.IGNORE_CASE).containsMatchIn(text) ->
                 EventType.INTERVIEW
 
-            Regex("""\b(company[\s\-]?session|info[\s\-]?session|webinar|workshop|interactive[\s\-]?session)\b""", RegexOption.IGNORE_CASE).containsMatchIn(text) ->
-                EventType.COMPANY_SESSION
+            Regex("""\b(gd|group[\s\-]?discussion)\b""", RegexOption.IGNORE_CASE).containsMatchIn(text) ->
+                EventType.GROUP_DISCUSSION
 
-            Regex("""\b(registration[\s\-]?deadline|form[\s\-]?deadline|last[\s\-]?date[\s\-]?to[\s\-]?register|portal[\s\-]?closes?)\b""", RegexOption.IGNORE_CASE).containsMatchIn(text) ->
-                EventType.REGISTRATION_DEADLINE
+            Regex("""\b(shortlist|shortlisted|selected\s+candidates|eligible\s+candidates)\b""", RegexOption.IGNORE_CASE).containsMatchIn(text) ->
+                EventType.SHORTLIST_ANNOUNCEMENT
 
-            Regex("""\b(resume[\s\-]?deadline|cv[\s\-]?submission|shortlist|shortlisted)\b""", RegexOption.IGNORE_CASE).containsMatchIn(text) ->
-                EventType.RESUME_DEADLINE
+            Regex("""\b(company[\s\-]?briefing|job[\s\-]?description|role[\s\-]?details|compensation[\s\-]?details)\b""", RegexOption.IGNORE_CASE).containsMatchIn(text) ->
+                EventType.COMPANY_BRIEFING
+
+            Regex("""\b(registration[\s\-]?deadline|form[\s\-]?deadline|last[\s\-]?date[\s\-]?to[\s\-]?register|portal[\s\-]?closes?|register|registration)\b""", RegexOption.IGNORE_CASE).containsMatchIn(text) ->
+                EventType.REGISTRATION
+
+            Regex("""\b(resume[\s\-]?deadline|cv[\s\-]?submission|upload\s+resume|submit\s+cv)\b""", RegexOption.IGNORE_CASE).containsMatchIn(text) ->
+                EventType.RESUME_SUBMISSION
+
+            Regex("""\b(placement\s+drive|recruitment|career\s+event|assessment)\b""", RegexOption.IGNORE_CASE).containsMatchIn(text) ->
+                EventType.GENERAL_EVENT
 
             else -> EventType.OTHER
         }
     }
 
     private fun detectCompany(text: String): String {
-        // Strip URLs to avoid false positive matching against company domains in links (e.g. meet.google.com, teams.microsoft.com)
+        // Strip URLs to avoid false positive matching against company domains in links
         val textWithoutUrls = text.replace(Regex("""https?://[^\s<>"'{}|\\^`]+"""), "")
 
-        // 1. Look for Header style: "Company Name : XYZ" or "Company: XYZ"
-        val explicitCompanyPattern = Regex("""(?:Company(?:\s+Name)?|Org|Firm)\s*[:\-]\s*([A-Za-z0-9\s&.\-_/]{2,35})""", RegexOption.IGNORE_CASE)
+        // 1. Look for Header style: "Company Name : XYZ" or "Company: XYZ" or "*Company: XYZ*"
+        val explicitCompanyPattern = Regex("""(?:Company(?:\s+Name)?|Org|Firm)\s*[:\-]\s*\*?([A-Za-z0-9\s&.\-_/]{2,35})\*?""", RegexOption.IGNORE_CASE)
         val explicitMatch = explicitCompanyPattern.find(textWithoutUrls)
         if (explicitMatch != null) {
-            val candidate = explicitMatch.groupValues[1].lines().first().trim()
+            val candidate = explicitMatch.groupValues[1].lines().first().replace("*", "").trim()
             if (candidate.length in 2..35 && !isGenericWord(candidate)) {
                 return candidate
             }
@@ -187,7 +236,7 @@ class RuleBasedExtractor(
         for (pattern in headerPatterns) {
             val match = pattern.find(textWithoutUrls)
             if (match != null) {
-                val candidate = match.groupValues[1].trim()
+                val candidate = match.groupValues[1].replace("*", "").trim()
                 if (candidate.length in 2..30 && !isGenericWord(candidate)) {
                     return candidate
                 }
@@ -224,7 +273,6 @@ class RuleBasedExtractor(
     }
 
     private fun detectVenue(text: String): String {
-        // Direct venue prefix pattern: "PPT venue : RMN 101" or "Venue: CLT"
         val venuePattern = Regex("""(?:PPT\s+venue|Venue|Location|Place|Room)\s*[:\-]\s*([A-Za-z0-9\s,\-\(\)/]{2,35})""", RegexOption.IGNORE_CASE)
         val match = venuePattern.find(text)
         if (match != null) {
@@ -266,8 +314,6 @@ class RuleBasedExtractor(
     }
 
     private fun extractDescription(text: String, company: String, eventType: String): String {
-        // Clean and structure key placement notes
-        val cleanText = text.replace("*", "").trim()
-        return cleanText
+        return text.replace("*", "").trim()
     }
 }

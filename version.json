@@ -1,7 +1,7 @@
 {
-  "versionCode": 16,
-  "versionName": "1.1.6",
-  "changelog": "• Made exact parsed message on Event Card fully scrollable",
-  "downloadUrl": "https://rutwik113.github.io/syncly/syncly_v1.1.6.apk",
+  "versionCode": 17,
+  "versionName": "1.1.7",
+  "changelog": "• Two Event Creation Methods (Method A & B) with standardized Native Pickers\n• Event Title with '-------' fallback and Deadline 23:00 normalization\n• Telegram-Style Past Events Archive\n• Placement Vault 2xN preview grid and pale green Applied tracking\n• Reliable 30-min Alarm Reminders with Stop and 5m/10m Snooze\n• Device Reboot Recovery",
+  "downloadUrl": "https://rutwik113.github.io/syncly/syncly_v1.1.7.apk",
   "isMandatory": false
 }

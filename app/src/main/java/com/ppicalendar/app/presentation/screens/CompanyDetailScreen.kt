@@ -2,11 +2,15 @@ package com.ppicalendar.app.presentation.screens
 
 import android.content.Context
 import android.content.Intent
+import android.graphics.BitmapFactory
 import android.net.Uri
+import android.os.Build
 import android.provider.OpenableColumns
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.layout.Arrangement
@@ -17,12 +21,17 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -483,24 +492,37 @@ fun CompanyDetailScreen(
                                     }
                                 }
                             } else {
-                                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    company.attachments.forEach { attachment ->
-                                        SpaciousAttachmentCard(
-                                            attachment = attachment,
-                                            onOpen = {
-                                                if (!attachment.uriString.isNullOrBlank()) {
-                                                    try {
-                                                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(attachment.uriString)).apply {
-                                                            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_GRANT_READ_URI_PERMISSION
+                                val rows = company.attachments.chunked(2)
+                                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                                    rows.forEach { rowItems ->
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                        ) {
+                                            rowItems.forEach { attachment ->
+                                                Box(modifier = Modifier.weight(1f)) {
+                                                    SquareAttachmentCard(
+                                                        attachment = attachment,
+                                                        onOpen = {
+                                                            if (!attachment.uriString.isNullOrBlank()) {
+                                                                try {
+                                                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(attachment.uriString)).apply {
+                                                                        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_GRANT_READ_URI_PERMISSION
+                                                                    }
+                                                                    context.startActivity(intent)
+                                                                } catch (e: Exception) { }
+                                                            }
+                                                        },
+                                                        onDelete = {
+                                                            viewModel.deleteCompanyAttachment(company.id, attachment.id)
                                                         }
-                                                        context.startActivity(intent)
-                                                    } catch (e: Exception) { }
+                                                    )
                                                 }
-                                            },
-                                            onDelete = {
-                                                viewModel.deleteCompanyAttachment(company.id, attachment.id)
                                             }
-                                        )
+                                            if (rowItems.size == 1) {
+                                                Spacer(modifier = Modifier.weight(1f))
+                                            }
+                                        }
                                     }
                                 }
                             }
@@ -700,7 +722,7 @@ fun CompanyDetailScreen(
             companyName = company.name,
             onDismiss = { showAddEventDialog = false },
             onAdd = { event ->
-                viewModel.saveEditedEvent(event, createImmediately = true)
+                viewModel.addQuickEvent(event)
                 showAddEventDialog = false
             }
         )
@@ -708,97 +730,180 @@ fun CompanyDetailScreen(
 }
 
 @Composable
-fun SpaciousAttachmentCard(
+fun SquareAttachmentCard(
     attachment: CompanyAttachment,
     onOpen: () -> Unit,
     onDelete: () -> Unit
 ) {
+    val context = LocalContext.current
+    val previewBitmap = remember(attachment.uriString) {
+        attachment.uriString?.let { uriStr ->
+            try {
+                val uri = Uri.parse(uriStr)
+                if (attachment.type == AttachmentType.IMAGE) {
+                    context.contentResolver.openInputStream(uri)?.use { stream ->
+                        val options = BitmapFactory.Options().apply { inSampleSize = 2 }
+                        BitmapFactory.decodeStream(stream, null, options)?.asImageBitmap()
+                    }
+                } else if (attachment.type == AttachmentType.PDF && Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                    context.contentResolver.openFileDescriptor(uri, "r")?.use { pfd ->
+                        val renderer = android.graphics.pdf.PdfRenderer(pfd)
+                        if (renderer.pageCount > 0) {
+                            val page = renderer.openPage(0)
+                            val bmp = android.graphics.Bitmap.createBitmap(320, 320, android.graphics.Bitmap.Config.ARGB_8888)
+                            bmp.eraseColor(android.graphics.Color.WHITE)
+                            page.render(bmp, null, null, android.graphics.pdf.PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
+                            page.close()
+                            renderer.close()
+                            bmp.asImageBitmap()
+                        } else {
+                            renderer.close()
+                            null
+                        }
+                    }
+                } else null
+            } catch (e: Exception) {
+                null
+            }
+        }
+    }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
+            .aspectRatio(1f)
             .clickable(onClick = onOpen),
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(14.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(14.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.weight(1f)
-            ) {
-                Surface(
-                    shape = CircleShape,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(38.dp)
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        val icon = when (attachment.type) {
-                            AttachmentType.PDF -> Icons.Default.PictureAsPdf
-                            AttachmentType.IMAGE -> Icons.Default.Image
-                            AttachmentType.NOTE -> Icons.Default.Description
-                            else -> Icons.Default.AttachFile
-                        }
-                        Icon(
-                            imageVector = icon,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onPrimary,
-                            modifier = Modifier.size(20.dp)
+        Box(modifier = Modifier.fillMaxSize()) {
+            if (previewBitmap != null) {
+                Image(
+                    bitmap = previewBitmap,
+                    contentDescription = attachment.title,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
+                )
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(54.dp)
+                        .align(Alignment.BottomCenter)
+                        .background(
+                            Brush.verticalGradient(
+                                colors = listOf(Color.Transparent, Color(0xCC000000))
+                            )
                         )
+                )
+            } else {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(12.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    val icon = when (attachment.type) {
+                        AttachmentType.PDF -> Icons.Default.PictureAsPdf
+                        AttachmentType.IMAGE -> Icons.Default.Image
+                        else -> Icons.Default.Description
                     }
-                }
-
-                Spacer(modifier = Modifier.width(12.dp))
-
-                Column(modifier = Modifier.weight(1f)) {
+                    val iconTint = when (attachment.type) {
+                        AttachmentType.PDF -> AccentRedBadge
+                        else -> MaterialTheme.colorScheme.primary
+                    }
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        tint = iconTint,
+                        modifier = Modifier.size(36.dp)
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
                     Text(
                         text = attachment.title,
-                        style = MaterialTheme.typography.bodyMedium,
+                        style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 1,
+                        textAlign = TextAlign.Center
                     )
-
-                    if (!attachment.textContent.isNullOrBlank()) {
-                        Text(
-                            text = attachment.textContent,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 2
-                        )
-                    } else if (!attachment.fileSizeFormatted.isNullOrBlank()) {
+                    if (!attachment.fileSizeFormatted.isNullOrBlank()) {
                         Text(
                             text = attachment.fileSizeFormatted,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontSize = 10.sp
                         )
                     }
                 }
             }
 
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                if (!attachment.uriString.isNullOrBlank()) {
-                    IconButton(onClick = onOpen) {
-                        Icon(
-                            imageVector = Icons.Default.OpenInNew,
-                            contentDescription = "Open file",
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(20.dp)
+            // Top-left Type Tag
+            Surface(
+                shape = RoundedCornerShape(bottomEnd = 8.dp),
+                color = when (attachment.type) {
+                    AttachmentType.PDF -> AccentRedBadge.copy(alpha = 0.9f)
+                    AttachmentType.IMAGE -> MaterialTheme.colorScheme.primary.copy(alpha = 0.9f)
+                    else -> MaterialTheme.colorScheme.secondary.copy(alpha = 0.9f)
+                },
+                modifier = Modifier.align(Alignment.TopStart)
+            ) {
+                Text(
+                    text = when (attachment.type) {
+                        AttachmentType.PDF -> "PDF"
+                        AttachmentType.IMAGE -> "IMG"
+                        else -> "DOC"
+                    },
+                    color = Color.White,
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                )
+            }
+
+            // Top-right Delete Button
+            Surface(
+                shape = CircleShape,
+                color = Color.Black.copy(alpha = 0.6f),
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(6.dp)
+                    .size(26.dp)
+                    .clickable(onClick = onDelete)
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = "Delete Attachment",
+                        tint = Color.White,
+                        modifier = Modifier.size(14.dp)
+                    )
+                }
+            }
+
+            // Bottom label when thumbnail is active
+            if (previewBitmap != null) {
+                Column(
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .padding(8.dp)
+                ) {
+                    Text(
+                        text = attachment.title,
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White,
+                        maxLines = 1
+                    )
+                    if (!attachment.fileSizeFormatted.isNullOrBlank()) {
+                        Text(
+                            text = attachment.fileSizeFormatted,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = Color(0xFFDDDDDD),
+                            fontSize = 9.sp
                         )
                     }
-                }
-
-                IconButton(onClick = onDelete) {
-                    Icon(
-                        imageVector = Icons.Default.Delete,
-                        contentDescription = "Delete",
-                        tint = AccentRedBadge,
-                        modifier = Modifier.size(20.dp)
-                    )
                 }
             }
         }
