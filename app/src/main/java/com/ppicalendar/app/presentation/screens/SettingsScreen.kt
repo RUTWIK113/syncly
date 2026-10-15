@@ -4,6 +4,7 @@ import android.content.Intent
 import android.provider.Settings
 import android.net.Uri
 import android.os.Build
+import com.ppicalendar.app.presentation.dialogs.RestrictedSettingsDialog
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
@@ -130,6 +131,7 @@ fun SettingsScreen(
 
     var feedbackCategory by remember { mutableStateOf("Bug Report") }
     var feedbackMessage by remember { mutableStateOf("") }
+    var showRestrictedSettingsDialog by remember { mutableStateOf(false) }
 
     fun triggerAutoSaveIndicator() {
         scope.launch {
@@ -219,14 +221,69 @@ fun SettingsScreen(
                 Box(modifier = Modifier.padding(horizontal = 16.dp)) {
                     SettingsSectionCard(title = "Access & Permissions", icon = Icons.Default.VerifiedUser) {
                         
+                        val isListenerGranted = androidx.core.app.NotificationManagerCompat.getEnabledListenerPackages(context).contains(context.packageName)
                         SettingsToggleRow(
                             title = "Notification Listener",
-                            subtitle = "Allow Syncly to read incoming notifications",
-                            checked = androidx.core.app.NotificationManagerCompat.getEnabledListenerPackages(context).contains(context.packageName),
+                            subtitle = "Allow Syncly to read incoming campus notices",
+                            checked = isListenerGranted,
                             onCheckedChange = {
-                                context.startActivity(android.content.Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS"))
+                                if (!isListenerGranted && android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                                    showRestrictedSettingsDialog = true
+                                } else {
+                                    context.startActivity(android.content.Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS"))
+                                }
                             }
                         )
+
+                        if (!isListenerGranted) {
+                            Spacer(modifier = Modifier.height(10.dp))
+                            Surface(
+                                shape = RoundedCornerShape(12.dp),
+                                color = Color(0xFFFEF3C7),
+                                border = BorderStroke(1.dp, Color(0xFFFDE68A)),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { showRestrictedSettingsDialog = true }
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(12.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier.weight(1f)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Security,
+                                            contentDescription = null,
+                                            tint = Color(0xFFD97706),
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Column {
+                                            Text(
+                                                text = "Android 13+ 'Restricted setting'?",
+                                                fontSize = 12.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = Color(0xFF92400E)
+                                            )
+                                            Text(
+                                                text = "Tap here for 3-step unlock guide & Play Protect tip",
+                                                fontSize = 11.sp,
+                                                color = Color(0xFFB45309)
+                                            )
+                                        }
+                                    }
+                                    Text(
+                                        text = "Guide ➔",
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.ExtraBold,
+                                        color = Color(0xFFB45309)
+                                    )
+                                }
+                            }
+                        }
 
                         Spacer(modifier = Modifier.height(12.dp))
                         androidx.compose.material3.HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
@@ -1014,7 +1071,15 @@ item {
                     Text("Cancel")
                 }
             },
-            shape = RoundedCornerShape(16.dp)
+        )
+    }
+
+    if (showRestrictedSettingsDialog) {
+        RestrictedSettingsDialog(
+            onDismiss = {
+                showRestrictedSettingsDialog = false
+                viewModel.checkPermissions()
+            }
         )
     }
 }

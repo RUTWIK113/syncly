@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_item_root"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:background="@drawable/widget_card_item"
+    android:padding="8dp"
+    android:gravity="center_vertical">
+
+    <!-- Time Box -->
+    <LinearLayout
+        android:layout_width="64dp"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="center">
+
+        <TextView
+            android:id="@+id/widget_item_time"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="10:00 AM"
+            android:textColor="#1E1608"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:gravity="center" />
+    </LinearLayout>
+
+    <!-- Vertical separator line -->
+    <View
+        android:layout_width="1dp"
+        android:layout_height="32dp"
+        android:background="#EFE8D6"
+        android:layout_marginStart="4dp"
+        android:layout_marginEnd="8dp" />
+
+    <!-- Event Details (Company, Type, Venue) -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <!-- Top row: Company & Event Type Tag -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:id="@+id/widget_item_company"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Google"
+                android:textColor="#1E1608"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:singleLine="true"
+                android:ellipsize="end" />
+
+            <TextView
+                android:id="@+id/widget_item_type"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="PPT"
+                android:textColor="#B45309"
+                android:textSize="10sp"
+                android:textStyle="bold"
+                android:background="@drawable/widget_tag_background"
+                android:paddingStart="6dp"
+                android:paddingEnd="6dp"
+                android:paddingTop="2dp"
+                android:paddingBottom="2dp"
+                android:layout_marginStart="6dp" />
+        </LinearLayout>
+
+        <!-- Bottom row: Venue -->
+        <TextView
+            android:id="@+id/widget_item_venue"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:text="📍 CRC 101"
+            android:textColor="#6B5B45"
+            android:textSize="11sp"
+            android:singleLine="true"
+            android:ellipsize="end" />
+    </LinearLayout>
+</LinearLayout>

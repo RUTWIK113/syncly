@@ -218,6 +218,9 @@ class ProcessNotificationUseCase(
         }
 
         val totalProcessed = createdCount + confirmationCount + missingInfoCount
+        if (totalProcessed > 0) {
+            notificationHelper.updateWidgets()
+        }
         return when {
             totalProcessed == 0 && duplicateCount > 0 -> NotificationProcessOutcome.DuplicateEvent
             totalProcessed == 0 -> NotificationProcessOutcome.NotPlacementEvent

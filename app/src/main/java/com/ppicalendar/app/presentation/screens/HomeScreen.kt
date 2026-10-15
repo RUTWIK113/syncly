@@ -67,6 +67,7 @@ fun HomeScreen(
     var eventToDelete by remember { mutableStateOf<PlacementEvent?>(null) }
     var isAccountDialogVisible by remember { mutableStateOf(false) }
     var selectedCalendarCandidate by remember { mutableStateOf<CalendarInfo?>(null) }
+    var showRestrictedDialog by remember { mutableStateOf(false) }
 
     val connectedEmail = liveSettings.connectedEmail.ifBlank {
         availableCalendars.find { it.id == liveSettings.selectedCalendarId }?.accountName
@@ -174,7 +175,13 @@ fun HomeScreen(
                 if (!isPermissionGranted) {
                     item {
                         Box(modifier = Modifier.padding(horizontal = 16.dp)) {
-                            PermissionBanner(onFixPermissions = onNavigateToPermissions)
+                            PermissionBanner(onFixPermissions = {
+                                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                                    showRestrictedDialog = true
+                                } else {
+                                    onNavigateToPermissions()
+                                }
+                            })
                         }
                     }
                 }
@@ -507,6 +514,15 @@ fun HomeScreen(
                 .padding(16.dp)
         ) {
             Icon(Icons.Default.Add, contentDescription = "Add Event")
+        }
+
+        if (showRestrictedDialog) {
+            com.ppicalendar.app.presentation.dialogs.RestrictedSettingsDialog(
+                onDismiss = {
+                    showRestrictedDialog = false
+                    viewModel.checkPermissions()
+                }
+            )
         }
     }
 }
