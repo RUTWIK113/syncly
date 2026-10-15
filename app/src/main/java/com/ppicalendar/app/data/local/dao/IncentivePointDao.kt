@@ -13,6 +13,9 @@ interface IncentivePointDao {
     @Query("SELECT * FROM incentive_points ORDER BY createdAt DESC")
     fun getAllPointsFlow(): Flow<List<IncentivePointEntity>>
 
+    @Query("SELECT * FROM incentive_points ORDER BY createdAt DESC")
+    suspend fun getAllPointsImmediate(): List<IncentivePointEntity>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(point: IncentivePointEntity): Long
 

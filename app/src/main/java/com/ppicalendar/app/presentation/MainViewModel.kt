@@ -96,6 +96,23 @@ class MainViewModel(
         refreshCalendars()
         checkAppOpenRating()
         checkForAppUpdates()
+
+        // Auto-restore data from internal storage backup if empty after app update
+        viewModelScope.launch {
+            try {
+                val restored = com.ppicalendar.app.data.local.SynclyBackupManager.restoreFromBackupIfEmpty(
+                    context = getApplication(),
+                    database = container.database,
+                    notificationHelper = container.notificationHelper
+                )
+                if (restored) {
+                    _uiEvents.emit(UiNotification("✓ Restored previous data safely from internal storage backup!"))
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+
         viewModelScope.launch {
             try {
                 container.telemetryManager.syncUserTelemetry()
@@ -121,6 +138,9 @@ class MainViewModel(
                             // Non-fatal
                         }
                     }
+                }
+                if (events.isNotEmpty()) {
+                    triggerAutoBackup()
                 }
             }
         }
@@ -600,11 +620,61 @@ class MainViewModel(
                 note = note?.trim()?.ifBlank { null }
             )
         )
+        triggerAutoBackup()
         _uiEvents.emit(UiNotification("Added +$points Points for $title!"))
     }
 
     fun deleteIncentivePoint(id: Long) = viewModelScope.launch {
         container.incentivePointRepository.deletePoint(id)
+        triggerAutoBackup()
         _uiEvents.emit(UiNotification("Points entry deleted"))
+    }
+
+    fun triggerAutoBackup() {
+        viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            try {
+                com.ppicalendar.app.data.local.SynclyBackupManager.createBackupSnapshot(
+                    context = getApplication(),
+                    database = container.database
+                )
+            } catch (e: Exception) {
+                // Non-fatal
+            }
+        }
+    }
+
+    fun createManualBackup() = viewModelScope.launch {
+        val success = com.ppicalendar.app.data.local.SynclyBackupManager.createBackupSnapshot(
+            context = getApplication(),
+            database = container.database
+        )
+        if (success) {
+            _uiEvents.emit(UiNotification("✓ Data safely backed up to internal storage!"))
+        } else {
+            _uiEvents.emit(UiNotification("Failed to create backup snapshot", isError = true))
+        }
+    }
+
+    fun restoreDataManually() = viewModelScope.launch {
+        val success = com.ppicalendar.app.data.local.SynclyBackupManager.restoreFromBackupIfEmpty(
+            context = getApplication(),
+            database = container.database,
+            notificationHelper = container.notificationHelper
+        )
+        if (success) {
+            _uiEvents.emit(UiNotification("✓ Data restored successfully from internal storage!"))
+        } else {
+            // Also attempt calendar recovery directly
+            val recovered = com.ppicalendar.app.data.local.SynclyBackupManager.recoverEventsFromCalendar(
+                context = getApplication(),
+                database = container.database,
+                notificationHelper = container.notificationHelper
+            )
+            if (recovered) {
+                _uiEvents.emit(UiNotification("✓ Recovered synced events from Calendar!"))
+            } else {
+                _uiEvents.emit(UiNotification("Database already has data or no backup found."))
+            }
+        }
     }
 }
