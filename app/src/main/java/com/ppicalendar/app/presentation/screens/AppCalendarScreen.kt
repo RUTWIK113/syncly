@@ -321,6 +321,7 @@ fun AppCalendarScreen(viewModel: MainViewModel, modifier: Modifier = Modifier) {
                             items(eventsForSelectedDate, key = { it.id }) { event ->
                                 EventCard(
                                     event = event,
+                                    showActions = false,
                                     onConfirm = { viewModel.confirmEvent(event) },
                                     onEdit = { viewModel.openEditDialog(event) },
                                     onDismiss = { viewModel.deleteEvent(event.id) },

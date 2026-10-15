@@ -1,68 +1,24 @@
-// Updated HomeScreen.kt with stray duplicate when block removed
 package com.ppicalendar.app.presentation.screens
 
-import androidx.compose.foundation.Image
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.ui.res.painterResource
-import com.ppicalendar.app.R
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AutoAwesome
-import androidx.compose.material.icons.filled.CalendarToday
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Archive
 import androidx.compose.material.icons.filled.CheckCircleOutline
 import androidx.compose.material.icons.filled.EventNote
-import androidx.compose.material.icons.filled.NotificationsActive
-import androidx.compose.material.icons.filled.PendingActions
-import androidx.compose.material.icons.filled.Science
-import androidx.compose.material.icons.filled.Sync
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExtendedFloatingActionButton
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SecondaryTabRow
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Tab
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.clickable
-import androidx.compose.material.icons.filled.CalendarMonth
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.RadioButtonChecked
-import androidx.compose.material.icons.filled.RadioButtonUnchecked
-import com.ppicalendar.app.domain.model.CalendarInfo
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.PendingActions
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -72,20 +28,19 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.ppicalendar.app.domain.model.CalendarInfo
 import com.ppicalendar.app.domain.model.EventStatus
+import com.ppicalendar.app.domain.model.EventType
 import com.ppicalendar.app.domain.model.PlacementEvent
 import com.ppicalendar.app.presentation.MainViewModel
+import com.ppicalendar.app.presentation.components.AccountSelectionDialog
 import com.ppicalendar.app.presentation.components.EventCard
 import com.ppicalendar.app.presentation.components.PermissionBanner
-import com.ppicalendar.app.ui.theme.DarkBorder
-import com.ppicalendar.app.ui.theme.Gray300
-import com.ppicalendar.app.ui.theme.Gray500
-import com.ppicalendar.app.ui.theme.Gray700
-import com.ppicalendar.app.ui.theme.Gray800
-import com.ppicalendar.app.ui.theme.LightBorder
-import com.ppicalendar.app.ui.theme.PureBlack
+import com.ppicalendar.app.presentation.components.SynclyFooter
+import com.ppicalendar.app.presentation.components.SynclyHeader
 import com.ppicalendar.app.ui.theme.SynclyPrimaryAmber
-import com.ppicalendar.app.ui.theme.SynclyPrimaryAmber
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
 enum class EventTypeFilter {
     ALL,
@@ -103,13 +58,12 @@ fun HomeScreen(
 ) {
     val allEvents by viewModel.allEvents.collectAsState()
     val isPermissionGranted by viewModel.isNotificationListenerGranted.collectAsState()
-    val testNoticeCount by viewModel.testNoticeCount.collectAsState()
     val liveSettings by viewModel.settings.collectAsState()
     val availableCalendars by viewModel.availableCalendars.collectAsState()
 
     var selectedTab by remember { mutableIntStateOf(0) }
     var eventTypeFilter by remember { mutableStateOf(EventTypeFilter.ALL) }
-    var showPastEvents by remember { mutableStateOf(false) }
+    var isArchiveExpanded by remember { mutableStateOf(false) }
     var eventToDelete by remember { mutableStateOf<PlacementEvent?>(null) }
     var isAccountDialogVisible by remember { mutableStateOf(false) }
     var selectedCalendarCandidate by remember { mutableStateOf<CalendarInfo?>(null) }
@@ -125,90 +79,73 @@ fun HomeScreen(
         ?: availableCalendars.firstOrNull { it.isPrimary }
         ?: availableCalendars.firstOrNull()
 
-    fun formatMaskedEmail(email: String): String {
-        if (email.isBlank()) return "Connect Cal"
-        val parts = email.split("@")
-        val user = parts[0]
-        val domain = if (parts.size > 1) "@" + parts[1] else ""
-        val prefix = if (user.length > 3) user.take(3) else user
-        val fullMasked = "$prefix...xxxx$domain"
-        return if (fullMasked.length > 20) fullMasked.take(17) + "..." else fullMasked
-    }
+    val currentDateTime = remember(allEvents) { LocalDateTime.now() }
 
-    val today = remember { java.time.LocalDate.now() }
-    val activeEvents = remember(allEvents, today) {
-        allEvents.filter { event ->
-            try {
-                val eventDate = java.time.LocalDate.parse(event.date)
-                !eventDate.isBefore(today)
-            } catch (e: Exception) {
-                true // If we can't parse it, keep it in active to be safe
+    fun isEventElapsed(event: PlacementEvent): Boolean {
+        if (event.date.isBlank()) return false
+        return try {
+            val timeToUse = when {
+                !event.endTime.isNullOrBlank() -> event.endTime
+                event.startTime.isNotBlank() -> event.startTime
+                else -> "23:59"
             }
-        }
-    }
-    
-    val pastEventsList = remember(allEvents, today) {
-        allEvents.filter { event ->
-            try {
-                val eventDate = java.time.LocalDate.parse(event.date)
-                eventDate.isBefore(today)
-            } catch (e: Exception) {
-                false
-            }
+            val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
+            val eventEndDateTime = LocalDateTime.parse("${event.date} $timeToUse", formatter)
+            eventEndDateTime.isBefore(currentDateTime)
+        } catch (e: Exception) {
+            false
         }
     }
 
-    val createdEvents = remember(activeEvents) { activeEvents.filter { it.status == EventStatus.CREATED_IN_CALENDAR } }
-    val pendingEvents = remember(activeEvents) { activeEvents.filter { it.status != EventStatus.CREATED_IN_CALENDAR && it.status != EventStatus.DISMISSED } }
-    val createdCount = createdEvents.size
-    val pendingCount = pendingEvents.size
-
-    val displayedEvents = if (showPastEvents) {
-        pastEventsList
-    } else {
+    // Filter events by tab and status
+    val baseEvents = remember(allEvents, selectedTab) {
         when (selectedTab) {
-            0 -> createdEvents
-            1 -> pendingEvents
-            2 -> activeEvents
-            else -> createdEvents
+            0 -> allEvents.filter { it.status == EventStatus.CREATED_IN_CALENDAR }
+            1 -> allEvents.filter { it.status != EventStatus.CREATED_IN_CALENDAR && it.status != EventStatus.DISMISSED }
+            2 -> allEvents.filter { it.status != EventStatus.DISMISSED }
+            else -> allEvents
         }
     }
 
-    val filteredEvents = remember(displayedEvents, eventTypeFilter, showPastEvents) {
-        if (showPastEvents) {
-            displayedEvents
-        } else {
-            when (eventTypeFilter) {
-                EventTypeFilter.ALL -> displayedEvents
-                EventTypeFilter.PPT -> displayedEvents.filter { it.eventType == com.ppicalendar.app.domain.model.EventType.PRE_PLACEMENT_TALK }
-                EventTypeFilter.OA -> displayedEvents.filter { it.eventType == com.ppicalendar.app.domain.model.EventType.ONLINE_ASSESSMENT }
-                EventTypeFilter.RESUME -> displayedEvents.filter { it.eventType == com.ppicalendar.app.domain.model.EventType.RESUME_DEADLINE }
-            }
+    // Partition into Past Events and Active (Upcoming) Events per PRD Section 6.3
+    val (pastEvents, upcomingEvents) = remember(baseEvents, currentDateTime) {
+        baseEvents.partition { isEventElapsed(it) }
+    }
+
+    val createdCount = allEvents.count { it.status == EventStatus.CREATED_IN_CALENDAR && !isEventElapsed(it) }
+    val pendingCount = allEvents.count { it.status != EventStatus.CREATED_IN_CALENDAR && it.status != EventStatus.DISMISSED && !isEventElapsed(it) }
+
+    fun applyTypeFilter(list: List<PlacementEvent>): List<PlacementEvent> {
+        return when (eventTypeFilter) {
+            EventTypeFilter.ALL -> list
+            EventTypeFilter.PPT -> list.filter { it.eventType == EventType.PRE_PLACEMENT_TALK }
+            EventTypeFilter.OA -> list.filter { it.eventType == EventType.ONLINE_ASSESSMENT }
+            EventTypeFilter.RESUME -> list.filter { it.eventType == EventType.RESUME_SUBMISSION || it.eventType == EventType.RESUME_DEADLINE }
         }
+    }
+
+    val filteredUpcoming = remember(upcomingEvents, eventTypeFilter) {
+        applyTypeFilter(upcomingEvents)
+    }
+
+    val filteredPast = remember(pastEvents, eventTypeFilter) {
+        applyTypeFilter(pastEvents)
     }
 
     Box(modifier = modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
-            // Sticky Top Header with Google Calendar Account Chip
-            com.ppicalendar.app.presentation.components.SynclyHeader(
+            // Header
+            SynclyHeader(
                 title = "Syncly",
                 isHighContrast = liveSettings.isDarkTheme,
                 actions = {
-                    TextButton(onClick = { showPastEvents = !showPastEvents }) {
-                        Text(
-                            text = if (showPastEvents) "Active Events" else "Past Events",
-                            color = MaterialTheme.colorScheme.primary,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(8.dp))
                     val initial = liveSettings.connectedEmail.firstOrNull()?.uppercaseChar() ?: 'U'
                     Box(
                         modifier = Modifier
                             .size(36.dp)
-                            .clip(androidx.compose.foundation.shape.CircleShape)
-                            .background(com.ppicalendar.app.ui.theme.SynclyPrimaryAmber)
-                            .border(1.dp, Color(0xFFE5D5A0), androidx.compose.foundation.shape.CircleShape)
+                            .clip(CircleShape)
+                            .background(SynclyPrimaryAmber)
+                            .border(1.dp, Color(0xFFE5D5A0), CircleShape)
                             .clickable {
                                 viewModel.refreshCalendars()
                                 selectedCalendarCandidate = currentCalendar
@@ -233,7 +170,7 @@ fun HomeScreen(
                 contentPadding = PaddingValues(top = 16.dp, bottom = 24.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // Permission Warning Banner if missing
+                // Permission Warning Banner
                 if (!isPermissionGranted) {
                     item {
                         Box(modifier = Modifier.padding(horizontal = 16.dp)) {
@@ -242,85 +179,172 @@ fun HomeScreen(
                     }
                 }
 
-                // Interactive KPI Metric Cards acting as Tabs
-                if (!showPastEvents) {
-                    item {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            StatMetricCard(
-                                title = "Synced",
-                                count = createdCount.toString(),
-                                icon = Icons.Default.CheckCircleOutline,
-                                isSelected = selectedTab == 0,
-                                onClick = { selectedTab = 0 },
-                                modifier = Modifier.weight(1f)
-                            )
-                            StatMetricCard(
-                                title = "Pending",
-                                count = pendingCount.toString(),
-                                icon = Icons.Default.PendingActions,
-                                isSelected = selectedTab == 1,
-                                onClick = { selectedTab = 1 },
-                                modifier = Modifier.weight(1f)
-                            )
-                            StatMetricCard(
-                                title = "All",
-                                count = activeEvents.size.toString(),
-                                icon = Icons.Default.NotificationsActive,
-                                isSelected = selectedTab == 2,
-                                onClick = { selectedTab = 2 },
-                                modifier = Modifier.weight(1f)
+                // Interactive KPI Metric Cards
+                item {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        StatMetricCard(
+                            title = "Synced",
+                            count = createdCount.toString(),
+                            icon = Icons.Default.CheckCircleOutline,
+                            isSelected = selectedTab == 0,
+                            onClick = { selectedTab = 0 },
+                            modifier = Modifier.weight(1f)
+                        )
+                        StatMetricCard(
+                            title = "Pending",
+                            count = pendingCount.toString(),
+                            icon = Icons.Default.PendingActions,
+                            isSelected = selectedTab == 1,
+                            onClick = { selectedTab = 1 },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+
+                // Event Type Filters
+                item {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        EventTypeFilter.entries.forEach { filter ->
+                            val isSelected = eventTypeFilter == filter
+                            FilterChip(
+                                selected = isSelected,
+                                onClick = { eventTypeFilter = filter },
+                                label = {
+                                    Text(
+                                        text = when (filter) {
+                                            EventTypeFilter.ALL -> "All"
+                                            EventTypeFilter.PPT -> "PPT"
+                                            EventTypeFilter.OA -> "OA"
+                                            EventTypeFilter.RESUME -> "Resume"
+                                        },
+                                        fontSize = 12.sp,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+                                    )
+                                },
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = MaterialTheme.colorScheme.primary,
+                                    selectedLabelColor = MaterialTheme.colorScheme.onPrimary
+                                )
                             )
                         }
                     }
-    
-                    // Incentive Points Filter Chips (All, points=yes, points=no)
-                    item {
-                        Row(
+                }
+
+                // Section 6: Telegram-style Past Events Archive Entry Card
+                if (filteredPast.isNotEmpty()) {
+                    item(key = "archive_entry_card") {
+                        Card(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = 16.dp),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                .padding(horizontal = 16.dp)
+                                .clickable { isArchiveExpanded = !isArchiveExpanded },
+                            shape = RoundedCornerShape(14.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                            ),
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
                         ) {
-                            EventTypeFilter.entries.forEach { filter ->
-                                val isSelected = eventTypeFilter == filter
-                                val count = when (filter) {
-                                    EventTypeFilter.ALL -> displayedEvents.size
-                                    EventTypeFilter.PPT -> displayedEvents.count { it.eventType == com.ppicalendar.app.domain.model.EventType.PRE_PLACEMENT_TALK }
-                                    EventTypeFilter.OA -> displayedEvents.count { it.eventType == com.ppicalendar.app.domain.model.EventType.ONLINE_ASSESSMENT }
-                                    EventTypeFilter.RESUME -> displayedEvents.count { it.eventType == com.ppicalendar.app.domain.model.EventType.RESUME_DEADLINE }
-                                }
-                                FilterChip(
-                                    selected = isSelected,
-                                    onClick = { eventTypeFilter = filter },
-                                    label = {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                ) {
+                                    Surface(
+                                        shape = CircleShape,
+                                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
+                                        modifier = Modifier.size(36.dp)
+                                    ) {
+                                        Box(contentAlignment = Alignment.Center) {
+                                            Icon(
+                                                imageVector = Icons.Default.Archive,
+                                                contentDescription = "Past Events",
+                                                tint = MaterialTheme.colorScheme.primary,
+                                                modifier = Modifier.size(18.dp)
+                                            )
+                                        }
+                                    }
+                                    Column {
                                         Text(
-                                            text = when (filter) {
-                                                EventTypeFilter.ALL -> "All"
-                                                EventTypeFilter.PPT -> "PPT"
-                                                EventTypeFilter.OA -> "OA"
-                                                EventTypeFilter.RESUME -> "Resume"
-                                            },
-                                            fontSize = 12.sp,
-                                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+                                            text = "Past Events",
+                                            style = MaterialTheme.typography.titleMedium,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.onSurface
                                         )
-                                    },
-                                    colors = FilterChipDefaults.filterChipColors(
-                                        selectedContainerColor = MaterialTheme.colorScheme.primary,
-                                        selectedLabelColor = MaterialTheme.colorScheme.onPrimary
-                                    )
+                                        Text(
+                                            text = "${filteredPast.size} completed events",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                }
+                                Icon(
+                                    imageVector = if (isArchiveExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
+                            }
+                        }
+                    }
+
+                    // Expanded Past Events List (muted gray appearance and reduced opacity per Section 6.2)
+                    if (isArchiveExpanded) {
+                        val groupedPast = filteredPast
+                            .sortedWith(compareBy({ it.date }, { it.startTime }))
+                            .groupBy { it.date }
+
+                        groupedPast.forEach { (dateStr, events) ->
+                            val displayDate = if (dateStr.isNotBlank()) {
+                                com.ppicalendar.app.data.extractor.DateTimeParser.formatIndianDate(dateStr)
+                            } else "Unknown Date"
+
+                            item(key = "past_header_" + dateStr) {
+                                Text(
+                                    text = displayDate,
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.outline,
+                                    modifier = Modifier.padding(start = 20.dp, top = 4.dp, end = 16.dp, bottom = 2.dp)
+                                )
+                            }
+
+                            items(events, key = { "past_" + it.id }) { event ->
+                                Box(
+                                    modifier = Modifier
+                                        .padding(horizontal = 16.dp)
+                                        .alpha(0.6f)
+                                ) {
+                                    EventCard(
+                                        event = event,
+                                        onConfirm = { viewModel.confirmEvent(event) },
+                                        onEdit = { viewModel.openEditDialog(event) },
+                                        onDismiss = { viewModel.deleteEvent(event.id) },
+                                        onDelete = { eventToDelete = event },
+                                        isPendingView = false
+                                    )
+                                }
                             }
                         }
                     }
                 }
 
-                // List of Events
-                if (filteredEvents.isEmpty()) {
+                // Active / Upcoming Events
+                if (filteredUpcoming.isEmpty() && (!isArchiveExpanded || filteredPast.isEmpty())) {
                     item {
                         Box(modifier = Modifier.padding(horizontal = 16.dp)) {
                             Card(
@@ -329,7 +353,7 @@ fun HomeScreen(
                                     .padding(vertical = 12.dp),
                                 shape = RoundedCornerShape(16.dp),
                                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
+                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
                             ) {
                                 Column(
                                     modifier = Modifier
@@ -376,82 +400,10 @@ fun HomeScreen(
                         }
                     }
                 } else {
-                    val currentDateTime = java.time.LocalDateTime.now()
+                    val groupedUpcoming = filteredUpcoming
+                        .sortedWith(compareBy({ it.date }, { it.startTime }))
+                        .groupBy { it.date }
 
-                    val (pastEvents, upcomingEvents) = filteredEvents.partition { event ->
-                        if (event.date.isNotBlank() && event.startTime.isNotBlank()) {
-                            try {
-                                val formatter = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
-                                val eventDateTime = java.time.LocalDateTime.parse(" ", formatter)
-                                eventDateTime.isBefore(currentDateTime)
-                            } catch (e: Exception) {
-                                false
-                            }
-                        } else {
-                            false
-                        }
-                    }
-
-                    // 1. Past Events Bar
-                    if (pastEvents.isNotEmpty()) {
-                        item {
-                            Surface(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 16.dp, vertical = 8.dp)
-                                    .clickable { showPastEvents = !showPastEvents },
-                                color = com.ppicalendar.app.ui.theme.SynclyPrimaryAmber,
-                                shape = RoundedCornerShape(12.dp)
-                            ) {
-                                Row(
-                                    modifier = Modifier.padding(16.dp),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text("Past Events (${pastEvents.size})", fontWeight = FontWeight.Bold, color = com.ppicalendar.app.ui.theme.PureBlack)
-                                    Icon(
-                                        imageVector = if (showPastEvents) androidx.compose.material.icons.Icons.Filled.KeyboardArrowUp else androidx.compose.material.icons.Icons.Filled.KeyboardArrowDown,
-                                        contentDescription = null,
-                                        tint = com.ppicalendar.app.ui.theme.PureBlack
-                                    )
-                                }
-                            }
-                        }
-
-                        if (showPastEvents) {
-                            val groupedPast = pastEvents.sortedWith(compareBy({ it.date }, { it.startTime })).groupBy { it.date }
-                            groupedPast.forEach { (dateStr, events) ->
-                                val displayDate = if (dateStr.isNotBlank()) {
-                                    com.ppicalendar.app.data.extractor.DateTimeParser.formatIndianDate(dateStr)
-                                } else "Unknown Date"
-
-                                item(key = "past_header_" + dateStr) {
-                                    Text(
-                                        text = displayDate,
-                                        style = MaterialTheme.typography.titleMedium,
-                                        fontWeight = FontWeight.ExtraBold,
-                                        color = MaterialTheme.colorScheme.outline,
-                                        modifier = Modifier.padding(start = 16.dp, top = 8.dp, end = 16.dp, bottom = 2.dp)
-                                    )
-                                }
-
-                                items(events, key = { it.id }) { event ->
-                                    Box(modifier = Modifier.padding(horizontal = 16.dp).alpha(0.5f)) {
-                                        EventCard(
-                                            event = event,
-                                            onConfirm = { viewModel.confirmEvent(event) },
-                                            onEdit = { viewModel.openEditDialog(event) },
-                                            onDismiss = { viewModel.deleteEvent(event.id) },
-                                            onDelete = { eventToDelete = event }
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    // 2. Upcoming Events
-                    val groupedUpcoming = upcomingEvents.sortedWith(compareBy({ it.date }, { it.startTime })).groupBy { it.date }
                     groupedUpcoming.forEach { (dateStr, events) ->
                         val displayDate = if (dateStr.isNotBlank()) {
                             com.ppicalendar.app.data.extractor.DateTimeParser.formatIndianDate(dateStr)
@@ -476,16 +428,17 @@ fun HomeScreen(
                                     onConfirm = { viewModel.confirmEvent(event) },
                                     onEdit = { viewModel.openEditDialog(event) },
                                     onDismiss = { viewModel.deleteEvent(event.id) },
-                                    onDelete = { eventToDelete = event }
+                                    onDelete = { eventToDelete = event },
+                                    isPendingView = selectedTab == 1 // PRD Section 5.1: Update button in Pending
                                 )
                             }
                         }
                     }
                 }
 
-                // Trademark Footer: Crafted by Rutwik
+                // Footer
                 item {
-                    com.ppicalendar.app.presentation.components.SynclyFooter()
+                    SynclyFooter()
                 }
 
                 item {
@@ -496,14 +449,9 @@ fun HomeScreen(
 
         // Delete Event Confirmation Popup Dialog
         eventToDelete?.let { event ->
-            androidx.compose.material3.AlertDialog(
+            AlertDialog(
                 onDismissRequest = { eventToDelete = null },
-                title = {
-                    Text(
-                        text = "Delete Event?",
-                        fontWeight = FontWeight.Bold
-                    )
-                },
+                title = { Text(text = "Delete Event?", fontWeight = FontWeight.Bold) },
                 text = {
                     Text(
                         text = "Are you sure you want to delete '${event.formattedTitle}'?\n\nThis will remove the event from Syncly and delete it from your Google Calendar. The company record in Company Vault will remain saved.",
@@ -525,7 +473,7 @@ fun HomeScreen(
                     }
                 },
                 dismissButton = {
-                    androidx.compose.material3.TextButton(onClick = { eventToDelete = null }) {
+                    TextButton(onClick = { eventToDelete = null }) {
                         Text("Cancel")
                     }
                 },
@@ -534,7 +482,7 @@ fun HomeScreen(
         }
 
         // Google Calendar Account Picker Dialog
-        com.ppicalendar.app.presentation.components.AccountSelectionDialog(
+        AccountSelectionDialog(
             isVisible = isAccountDialogVisible,
             onDismiss = { isAccountDialogVisible = false },
             availableCalendars = availableCalendars,
@@ -549,8 +497,8 @@ fun HomeScreen(
             }
         )
 
-        // Floating Action Button for manual entry
-        androidx.compose.material3.FloatingActionButton(
+        // Floating Action Button for Event Creation (Two Methods: Parsing & Quick Form)
+        FloatingActionButton(
             onClick = { viewModel.openSimulator() },
             containerColor = MaterialTheme.colorScheme.primary,
             contentColor = MaterialTheme.colorScheme.onPrimary,
@@ -558,7 +506,7 @@ fun HomeScreen(
                 .align(Alignment.BottomEnd)
                 .padding(16.dp)
         ) {
-            Icon(Icons.Default.Add, contentDescription = "Manual Entry")
+            Icon(Icons.Default.Add, contentDescription = "Add Event")
         }
     }
 }

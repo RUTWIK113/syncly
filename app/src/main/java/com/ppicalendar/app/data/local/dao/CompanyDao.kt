@@ -14,6 +14,9 @@ interface CompanyDao {
     @Query("SELECT * FROM companies ORDER BY name ASC")
     fun getAllCompaniesFlow(): Flow<List<CompanyEntity>>
 
+    @Query("SELECT * FROM companies ORDER BY name ASC")
+    suspend fun getAllCompaniesImmediate(): List<CompanyEntity>
+
     @Query("SELECT * FROM companies WHERE id = :id")
     suspend fun getCompanyById(id: Long): CompanyEntity?
 

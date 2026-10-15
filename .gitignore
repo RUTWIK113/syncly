@@ -2,6 +2,8 @@
 *.apk
 !docs/*.apk
 !public/*.apk
+!public/docs/*.apk
+!syncly_v1.1.7.apk
 *.aar
 *.ap_
 *.aab

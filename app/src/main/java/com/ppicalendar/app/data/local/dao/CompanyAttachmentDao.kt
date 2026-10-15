@@ -17,6 +17,9 @@ interface CompanyAttachmentDao {
     @Query("SELECT * FROM company_attachments WHERE companyId = :companyId ORDER BY createdAt DESC")
     suspend fun getAttachmentsForCompany(companyId: Long): List<CompanyAttachmentEntity>
 
+    @Query("SELECT * FROM company_attachments ORDER BY createdAt DESC")
+    suspend fun getAllAttachmentsImmediate(): List<CompanyAttachmentEntity>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(attachment: CompanyAttachmentEntity): Long
 
