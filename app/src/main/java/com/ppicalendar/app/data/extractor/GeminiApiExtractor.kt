@@ -74,15 +74,16 @@ class GeminiApiExtractor(
         Reference current date: ${referenceDate} (Day of week: ${referenceDate.dayOfWeek}).
         
         CRITICAL RULES:
-        1. Extract EVERY distinct event from the message as a SEPARATE object. A single message often contains MULTIPLE events (e.g. PPT, OA, Interview, Deadline).
-        2. Common multi-event patterns you MUST split:
-           - "PPT: 6PM, 9th Oct" + "Test Date: 6:45PM, 9th Oct" = TWO events (PRE_PLACEMENT_TALK + ONLINE_ASSESSMENT)
-           - "GForm Deadline: 7th Oct EOD" = ONE event (REGISTRATION with deadline_date="YYYY-10-07", deadline_time="23:00")
+        1. Extract EVERY distinct event from the message as a SEPARATE object. Assume there is only ONE company per message: all events in this notice belong to that company. If no company is mentioned or identifiable, set company to exactly "-------" (seven hyphens).
+        2. Mostly there are 4 main event types you MUST detect and split into separate event objects:
+           - PPT (PRE_PLACEMENT_TALK) -> (date, time)
+           - OA (ONLINE_ASSESSMENT) -> (date, time)
+           - Resume (RESUME_SUBMISSION) -> (date, time)
+           - Registration (REGISTRATION) -> (date, time)
+           (also capture INTERVIEW, GROUP_DISCUSSION, PPI if mentioned)
         3. ALWAYS set is_event = true for any event that relates to campus placements, recruitment, tests, talks, or deadlines.
-        4. Extract the company name (e.g. "Squarepoint Capital", "Google", "Barclays"). If no company name is mentioned or identifiable in the notice, set company to exactly "-------" (seven hyphens). NEVER leave company empty.
-        5. Distinguish event date/time from registration/resume deadline:
-           - Event start time: HH:mm (24-hour format). If missing, leave as empty string "". NEVER assign 23:00 to event start times!
-           - If a registration or submission deadline is explicitly specified, put it in deadline_date (YYYY-MM-DD). If deadline date is present but deadline time is omitted, default deadline_time to "23:00".
+        4. If the word 'deadline' is mentioned (or EOD, End of Day, Last date, Closes) and no specific time is provided, the time MUST default to "23:00".
+        5. For non-deadline event start times (like PPT or OA): if time is missing, leave as empty string "". NEVER assign 23:00 to PPT/OA start times!
         6. Normalize times to 24-hour HH:mm: "7pm" = "19:00", "6:45PM" = "18:45", "6PM - 6:45PM" = start "18:00" end "18:45".
         7. For venues, capture campus lecture halls (CRC, RJN, RMN, MSB, ESB, CLT, SAC, etc.) or "Online".
         8. Attach links intelligently: registration form links go to REGISTRATION, test links go to ONLINE_ASSESSMENT, WhatsApp group links to meeting_url.

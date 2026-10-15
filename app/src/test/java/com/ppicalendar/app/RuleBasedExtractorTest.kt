@@ -83,4 +83,44 @@ class RuleBasedExtractorTest {
 
         assertTrue(!result.isEvent || result.company.isBlank())
     }
+
+    @Test
+    fun testMultiEventFourTypesAndDeadlineDefaultTime() {
+        val text = """
+            Company: Google
+            PPT: 10th Oct (6:00 PM)
+            OA: 12th Oct (7:00 PM - 8:30 PM)
+            Resume Deadline: 8th Oct EOD
+            Registration Deadline: 7th Oct
+            Venue: CLT
+        """.trimIndent()
+
+        val results = extractor.extractAll(text, refDate)
+        assertEquals(4, results.size)
+
+        // 1. PPT
+        val ppt = results.find { it.eventType == EventType.PRE_PLACEMENT_TALK.name }!!
+        assertEquals("Google", ppt.company)
+        assertEquals("2026-10-10", ppt.date)
+        assertEquals("18:00", ppt.startTime)
+
+        // 2. OA
+        val oa = results.find { it.eventType == EventType.ONLINE_ASSESSMENT.name }!!
+        assertEquals("Google", oa.company)
+        assertEquals("2026-10-12", oa.date)
+        assertEquals("19:00", oa.startTime)
+        assertEquals("20:30", oa.endTime)
+
+        // 3. Resume Deadline (EOD -> 23:00)
+        val resume = results.find { it.eventType == EventType.RESUME_SUBMISSION.name }!!
+        assertEquals("Google", resume.company)
+        assertEquals("2026-10-08", resume.date)
+        assertEquals("23:00", resume.startTime)
+
+        // 4. Registration Deadline (no time provided -> 23:00)
+        val reg = results.find { it.eventType == EventType.REGISTRATION.name }!!
+        assertEquals("Google", reg.company)
+        assertEquals("2026-10-07", reg.date)
+        assertEquals("23:00", reg.startTime)
+    }
 }

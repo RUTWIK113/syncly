@@ -1,4 +1,4 @@
-﻿package com.ppicalendar.app.data.extractor
+package com.ppicalendar.app.data.extractor
 
 import android.util.Log
 import com.ppicalendar.app.domain.model.ExtractionResult
@@ -45,7 +45,7 @@ class HybridEventExtractor(
 
         // Fallback to offline rule-based & regex heuristics engine
         Log.d(TAG, "Executing offline Rule-Based Extractor...")
-        val fallbackResult = ruleBasedExtractor.extract(text, referenceDate, forcePlacement)
-        return listOf(fallbackResult)
+        val fallbackResults = ruleBasedExtractor.extractAll(text, referenceDate, forcePlacement)
+        return fallbackResults
     }
 }
