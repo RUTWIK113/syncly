@@ -53,9 +53,6 @@ fun EventCreationDialog(
     var dateString by remember { mutableStateOf(todayStr) }
     var timeString by remember { mutableStateOf("") }
     var venue by remember { mutableStateOf("") }
-    var hasDeadline by remember { mutableStateOf(false) }
-    var deadlineDateString by remember { mutableStateOf("") }
-    var deadlineTimeString by remember { mutableStateOf("23:00") }
 
     Dialog(
         onDismissRequest = onDismiss,
@@ -206,39 +203,6 @@ fun EventCreationDialog(
                             modifier = Modifier.fillMaxWidth(),
                             singleLine = true
                         )
-
-                        // Optional Deadline Section
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { hasDeadline = !hasDeadline }
-                                .padding(vertical = 4.dp)
-                        ) {
-                            Checkbox(
-                                checked = hasDeadline,
-                                onCheckedChange = { hasDeadline = it }
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = "Has Registration/Application Deadline",
-                                style = MaterialTheme.typography.bodyMedium,
-                                fontWeight = FontWeight.Medium
-                            )
-                        }
-
-                        if (hasDeadline) {
-                            NativeDatePickerField(
-                                date = deadlineDateString,
-                                onDateSelected = { deadlineDateString = it },
-                                label = "Deadline Date *"
-                            )
-                            NativeTimePickerField(
-                                time = deadlineTimeString,
-                                onTimeSelected = { deadlineTimeString = it },
-                                label = "Deadline Time (Defaults to 23:00)"
-                            )
-                        }
                     }
                 }
 
@@ -276,9 +240,6 @@ fun EventCreationDialog(
                     } else {
                         Button(
                             onClick = {
-                                val deadlineDate = if (hasDeadline && deadlineDateString.isNotBlank()) deadlineDateString else null
-                                val deadlineTime = PlacementEvent.normalizeDeadlineTime(deadlineDate, deadlineTimeString)
-
                                 val event = PlacementEvent(
                                     notificationKey = UUID.randomUUID().toString(),
                                     company = companyName.trim().ifBlank { PlacementEvent.DEFAULT_COMPANY_FALLBACK },
@@ -286,8 +247,6 @@ fun EventCreationDialog(
                                     eventType = selectedEventType,
                                     date = dateString,
                                     startTime = timeString,
-                                    deadlineDate = deadlineDate,
-                                    deadlineTime = deadlineTime,
                                     venue = venue.trim().ifBlank { null },
                                     description = "Manually created event"
                                 )

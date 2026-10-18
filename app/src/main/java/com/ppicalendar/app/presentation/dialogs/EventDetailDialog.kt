@@ -40,9 +40,6 @@ fun EventDetailDialog(
     var date by remember { mutableStateOf(event.date) }
     var startTime by remember { mutableStateOf(event.startTime) }
     var endTime by remember { mutableStateOf(event.endTime ?: "") }
-    var hasDeadline by remember { mutableStateOf(!event.deadlineDate.isNullOrBlank()) }
-    var deadlineDate by remember { mutableStateOf(event.deadlineDate ?: "") }
-    var deadlineTime by remember { mutableStateOf(event.deadlineTime ?: PlacementEvent.DEFAULT_DEADLINE_TIME) }
     var venue by remember { mutableStateOf(event.venue ?: "") }
     var meetingUrl by remember { mutableStateOf(event.meetingUrl ?: "") }
     var description by remember { mutableStateOf(event.description ?: "") }
@@ -170,39 +167,6 @@ fun EventDetailDialog(
                         singleLine = true
                     )
 
-                    // Deadline Section
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { hasDeadline = !hasDeadline }
-                            .padding(vertical = 4.dp)
-                    ) {
-                        Checkbox(
-                            checked = hasDeadline,
-                            onCheckedChange = { hasDeadline = it }
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = "Include Registration / Application Deadline",
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
-
-                    if (hasDeadline) {
-                        NativeDatePickerField(
-                            date = deadlineDate,
-                            onDateSelected = { deadlineDate = it },
-                            label = "Deadline Date *"
-                        )
-                        NativeTimePickerField(
-                            time = deadlineTime,
-                            onTimeSelected = { deadlineTime = it },
-                            label = "Deadline Time (Defaults to 23:00)"
-                        )
-                    }
-
                     // Notes Section
                     if (!isEditingNote) {
                         Column(
@@ -272,8 +236,6 @@ fun EventDetailDialog(
                         Button(
                             onClick = {
                                 val finalCompany = company.trim().ifBlank { PlacementEvent.DEFAULT_COMPANY_FALLBACK }
-                                val finalDeadlineDate = if (hasDeadline && deadlineDate.isNotBlank()) deadlineDate else null
-                                val finalDeadlineTime = PlacementEvent.normalizeDeadlineTime(finalDeadlineDate, deadlineTime)
 
                                 val updated = event.copy(
                                     company = finalCompany,
@@ -282,8 +244,8 @@ fun EventDetailDialog(
                                     date = date.trim(),
                                     startTime = startTime.trim(),
                                     endTime = endTime.trim().ifBlank { null },
-                                    deadlineDate = finalDeadlineDate,
-                                    deadlineTime = finalDeadlineTime,
+                                    deadlineDate = event.deadlineDate,
+                                    deadlineTime = event.deadlineTime,
                                     venue = venue.trim().ifBlank { null },
                                     meetingUrl = meetingUrl.trim().ifBlank { null },
                                     description = description.trim().ifBlank { null }
