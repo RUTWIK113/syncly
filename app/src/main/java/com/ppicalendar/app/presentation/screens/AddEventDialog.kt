@@ -61,10 +61,6 @@ fun AddEventDialog(
     var timeString by remember { mutableStateOf("") }
     var venue by remember { mutableStateOf("") }
 
-    var hasDeadline by remember { mutableStateOf(false) }
-    var deadlineDate by remember { mutableStateOf("") }
-    var deadlineTime by remember { mutableStateOf("23:00") }
-
     val scrollState = rememberScrollState()
 
     AlertDialog(
@@ -155,52 +151,12 @@ fun AddEventDialog(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(10.dp)
                 )
-
-                Spacer(modifier = Modifier.height(4.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "Has Registration/Submission Deadline?",
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.Medium
-                    )
-                    Switch(
-                        checked = hasDeadline,
-                        onCheckedChange = {
-                            hasDeadline = it
-                            if (it && deadlineTime.isBlank()) deadlineTime = "23:00"
-                        }
-                    )
-                }
-
-                if (hasDeadline) {
-                    NativeDatePickerField(
-                        label = "Deadline Date",
-                        date = deadlineDate,
-                        onDateSelected = { deadlineDate = it }
-                    )
-
-                    NativeTimePickerField(
-                        label = "Deadline Time (Defaults to 23:00)",
-                        time = deadlineTime,
-                        onTimeSelected = { deadlineTime = it }
-                    )
-                }
             }
         },
         confirmButton = {
             Button(
                 onClick = {
                     if (dateString.isNotBlank() && timeString.isNotBlank()) {
-                        val finalDeadlineDate = if (hasDeadline) deadlineDate.trim().ifBlank { null } else null
-                        val finalDeadlineTime = if (hasDeadline) {
-                            PlacementEvent.normalizeDeadlineTime(finalDeadlineDate, deadlineTime.trim().ifBlank { null })
-                        } else null
-
                         val event = PlacementEvent(
                             notificationKey = UUID.randomUUID().toString(),
                             company = companyName.trim().ifBlank { PlacementEvent.DEFAULT_COMPANY_FALLBACK },
@@ -209,8 +165,6 @@ fun AddEventDialog(
                             date = dateString.trim(),
                             startTime = timeString.trim(),
                             venue = venue.trim().ifBlank { null },
-                            deadlineDate = finalDeadlineDate,
-                            deadlineTime = finalDeadlineTime,
                             description = "Added from Placement Vault dossier"
                         )
                         onAdd(event)

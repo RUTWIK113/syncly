@@ -123,4 +123,61 @@ class RuleBasedExtractorTest {
         assertEquals("2026-10-07", reg.date)
         assertEquals("23:00", reg.startTime)
     }
+
+    @Test
+    fun testIterativeExtractionWithThreeEvents() {
+        val text = """
+            Company: Uber
+            PPT: 25th Oct (6:00 PM)
+            OA: 27th Oct (8:00 PM)
+            Resume Deadline: 24th Oct EOD
+        """.trimIndent()
+
+        val results = extractor.extractAll(text, refDate)
+        assertEquals(3, results.size)
+
+        for (res in results) {
+            assertEquals("Uber", res.company)
+        }
+
+        val ppt = results.find { it.eventType == EventType.PRE_PLACEMENT_TALK.name }!!
+        assertEquals("2026-10-25", ppt.date)
+        assertEquals("18:00", ppt.startTime)
+
+        val oa = results.find { it.eventType == EventType.ONLINE_ASSESSMENT.name }!!
+        assertEquals("2026-10-27", oa.date)
+        assertEquals("20:00", oa.startTime)
+
+        val resume = results.find { it.eventType == EventType.RESUME_SUBMISSION.name }!!
+        assertEquals("2026-10-24", resume.date)
+        assertEquals("23:00", resume.startTime)
+    }
+
+    @Test
+    fun testFallbackDashesWhenCompanyNotFound() {
+        val text = """
+            PPT: 15th Oct (5:00 PM)
+            OA: 18th Oct (7:00 PM)
+            Resume Deadline: 14th Oct EOD
+        """.trimIndent()
+
+        val results = extractor.extractAll(text, refDate)
+        assertEquals(3, results.size)
+
+        for (res in results) {
+            assertEquals("-------", res.company)
+        }
+    }
+
+    @Test
+    fun testProseMultiEventExtraction() {
+        val text = "Placement notice: PPT is on 15th Oct at 5:00 PM in CLT. Coding test is on 18th Oct at 7:00 PM. Please register and submit resume before 14th Oct EOD. Firm: Microsoft"
+
+        val results = extractor.extractAll(text, refDate)
+        assertTrue(results.size >= 2)
+
+        for (res in results) {
+            assertEquals("Microsoft", res.company)
+        }
+    }
 }

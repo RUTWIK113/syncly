@@ -78,76 +78,48 @@ class RuleBasedExtractor(
         val events = mutableListOf<ExtractionResult>()
         val processedEventKeys = mutableSetOf<String>()
 
-        // 2. Line-by-line multi-event regex matching
-        // Supports:
-        // PPT : 10th Oct (6:00 PM)
-        // OA / Test : 12th Oct (7:00 PM - 8:30 PM)
-        // Resume Deadline : 8th Oct EOD
-        // Registration Deadline : 7th Oct (11:59 PM)
-        val linePattern = Regex(
-            """(?m)^[*\s\-•]*([A-Za-z0-9\s/&.\-_()]+?)\s*[:\-]\s*(.*?)$"""
-        )
+        var workingText = text
 
-        for (match in linePattern.findAll(text)) {
-            val rawLabel = match.groupValues[1].replace("*", "").trim()
-            val rest = match.groupValues[2].replace("*", "").trim()
-
-            if (rest.isBlank()) continue
-
-            val eventType = matchEventTypeFromLabel(rawLabel, rest) ?: continue
-
-            val isDeadline = eventType == EventType.RESUME_SUBMISSION ||
-                    eventType == EventType.REGISTRATION ||
-                    rawLabel.contains("deadline", ignoreCase = true) ||
-                    rest.contains("deadline", ignoreCase = true) ||
-                    rest.contains("EOD", ignoreCase = true) ||
-                    rest.contains("end of day", ignoreCase = true)
-
-            // Extract time
-            val (startTimeRaw, endTimeRaw) = DateTimeParser.extractTimeRange(rest)
-            val startTime = if (startTimeRaw.isNotBlank()) {
-                startTimeRaw
-            } else if (isDeadline) {
-                PlacementEvent.DEFAULT_DEADLINE_TIME // "23:00"
-            } else {
-                ""
+        // 2. Parse the message up to 4 times (for safe side)
+        // In every iteration, when the first date/time (event) is found:
+        // parse and remove this date, time, and keyword from workingText!
+        // Repeat on remaining text. When nothing is found, just pass/break.
+        for (iter in 1..4) {
+            val candidates = findCandidates(workingText, referenceDate, globalVenue, globalMeetingUrl)
+            val candidate = candidates.firstOrNull { cand ->
+                val key = "${cand.eventType.name}_${cand.date}"
+                !processedEventKeys.contains(key)
             }
 
-            // Extract date
-            val rawDate = detectDateString(rest).ifBlank { detectDateString(text) }
-            val resolvedDate = resolveDateUseCase.resolve(rawDate, referenceDate)
+            if (candidate == null) {
+                // When nothing found, just pass / break
+                break
+            }
 
-            // Skip if both date and time are missing
-            if (resolvedDate.isBlank() && startTime.isBlank()) continue
-
-            val eventKey = "${eventType.name}_$resolvedDate"
-            if (processedEventKeys.contains(eventKey)) continue
+            val eventKey = "${candidate.eventType.name}_${candidate.date}"
             processedEventKeys.add(eventKey)
-
-            val venue = detectVenue(rest).ifBlank { globalVenue }
-            val meetingUrl = detectMeetingUrl(rest).ifBlank { globalMeetingUrl }
-
-            val deadlineDate = if (isDeadline) resolvedDate else ""
-            val deadlineTime = if (isDeadline) startTime else ""
 
             events.add(
                 ExtractionResult(
                     isEvent = true,
                     company = normalizedCompany,
                     title = "",
-                    eventType = eventType.name,
-                    date = resolvedDate,
-                    startTime = startTime,
-                    endTime = endTimeRaw,
-                    deadlineDate = deadlineDate,
-                    deadlineTime = deadlineTime,
-                    venue = venue,
-                    meetingUrl = meetingUrl,
-                    description = rest,
+                    eventType = candidate.eventType.name,
+                    date = candidate.date,
+                    startTime = candidate.startTime,
+                    endTime = candidate.endTime,
+                    deadlineDate = if (candidate.isDeadline) candidate.date else "",
+                    deadlineTime = if (candidate.isDeadline) candidate.startTime else "",
+                    venue = candidate.venue,
+                    meetingUrl = candidate.meetingUrl,
+                    description = candidate.description,
                     incentivePoints = incentivePoints,
                     confidence = 0.95
                 )
             )
+
+            // Remove this date, time, and keyword from workingText
+            workingText = removeEventFromText(workingText, candidate)
         }
 
         // 3. Fallback: If no structured line events matched, extract single event
@@ -159,6 +131,201 @@ class RuleBasedExtractor(
         }
 
         return events
+    }
+
+    private data class EventCandidate(
+        val eventType: EventType,
+        val isDeadline: Boolean,
+        val date: String,
+        val startTime: String,
+        val endTime: String,
+        val venue: String,
+        val meetingUrl: String,
+        val description: String,
+        val startIndex: Int,
+        val range: IntRange,
+        val matchedKeyword: String,
+        val matchedDateStr: String,
+        val matchedTimeStr: String
+    )
+
+    private fun findCandidates(
+        workingText: String,
+        referenceDate: LocalDate,
+        globalVenue: String,
+        globalMeetingUrl: String
+    ): List<EventCandidate> {
+        val candidates = mutableListOf<EventCandidate>()
+        val coveredRanges = mutableListOf<IntRange>()
+
+        // 1. Line-based pattern: e.g. "PPT : 10th Oct (6:00 PM)" or "Resume Deadline : 8th Oct EOD"
+        val linePattern = Regex("""(?m)^[*\s\-•]*([A-Za-z0-9\s/&.\-_()]+?)\s*[:\-]\s*(.*?)$""")
+        for (match in linePattern.findAll(workingText)) {
+            val rawLabel = match.groupValues[1].replace("*", "").trim()
+            val rest = match.groupValues[2].replace("*", "").trim()
+            if (rest.isBlank()) continue
+
+            val eventType = matchEventTypeFromLabel(rawLabel, rest) ?: continue
+
+            val isDeadline = eventType == EventType.RESUME_SUBMISSION ||
+                    eventType == EventType.REGISTRATION ||
+                    rawLabel.contains("deadline", ignoreCase = true) ||
+                    rest.contains("deadline", ignoreCase = true) ||
+                    rest.contains("EOD", ignoreCase = true) ||
+                    rest.contains("end of day", ignoreCase = true) ||
+                    rawLabel.contains("last date", ignoreCase = true) ||
+                    rest.contains("last date", ignoreCase = true)
+
+            val (startTimeRaw, endTimeRaw) = DateTimeParser.extractTimeRange(rest)
+            val startTime = if (startTimeRaw.isNotBlank()) {
+                startTimeRaw
+            } else if (isDeadline) {
+                PlacementEvent.DEFAULT_DEADLINE_TIME
+            } else {
+                ""
+            }
+
+            val rawDate = detectDateString(rest).ifBlank { detectDateString(workingText) }
+            val resolvedDate = if (rawDate.isNotBlank()) resolveDateUseCase.resolve(rawDate, referenceDate) else ""
+
+            if (resolvedDate.isBlank() && startTime.isBlank()) continue
+
+            candidates.add(
+                EventCandidate(
+                    eventType = eventType,
+                    isDeadline = isDeadline,
+                    date = resolvedDate,
+                    startTime = startTime,
+                    endTime = endTimeRaw,
+                    venue = detectVenue(rest).ifBlank { globalVenue },
+                    meetingUrl = detectMeetingUrl(rest).ifBlank { globalMeetingUrl },
+                    description = rest,
+                    startIndex = match.range.first,
+                    range = match.range,
+                    matchedKeyword = rawLabel,
+                    matchedDateStr = rawDate,
+                    matchedTimeStr = startTimeRaw
+                )
+            )
+            coveredRanges.add(match.range)
+        }
+
+        // 2. Phrase-based / Free-form pattern: e.g. "Pre-Placement Talk tomorrow at 6:00 PM"
+        val phraseKeywords = listOf(
+            Pair(Regex("""\b(pre[\s\-]?placement\s+(?:talk|session)|ppt|presentation)\b""", RegexOption.IGNORE_CASE), EventType.PRE_PLACEMENT_TALK),
+            Pair(Regex("""\b(online\s+assessment|coding\s+(?:test|round)|technical\s+assessment|oa)\b""", RegexOption.IGNORE_CASE), EventType.ONLINE_ASSESSMENT),
+            Pair(Regex("""\b(resume[\s\-]?deadline|cv[\s\-]?deadline|resume\s+submission|cv\s+submission|submit\s+resume|submit\s+cv|upload\s+resume)\b""", RegexOption.IGNORE_CASE), EventType.RESUME_SUBMISSION),
+            Pair(Regex("""\b(registration[\s\-]?deadline|reg[\s\-]?deadline|gform[\s\-]?deadline|register\s+by|registration\s+closes|last\s+date\s+to\s+register|last\s+date\s+to\s+apply)\b""", RegexOption.IGNORE_CASE), EventType.REGISTRATION),
+            Pair(Regex("""\b(interview|tech[\s\-]?interview|hr[\s\-]?interview)\b""", RegexOption.IGNORE_CASE), EventType.INTERVIEW),
+            Pair(Regex("""\b(gd|group[\s\-]?discussion)\b""", RegexOption.IGNORE_CASE), EventType.GROUP_DISCUSSION),
+            Pair(Regex("""\b(deadline|last\s+date)\b""", RegexOption.IGNORE_CASE), EventType.REGISTRATION)
+        )
+
+        for ((regex, type) in phraseKeywords) {
+            for (match in regex.findAll(workingText)) {
+                // If this match is already covered by a line-based candidate, skip
+                if (coveredRanges.any { it.first <= match.range.first && match.range.last <= it.last }) continue
+
+                // Find enclosing clause/sentence (bounded by newlines or sentence-ending punctuation)
+                var lineStart = 0
+                val prevBoundRegex = Regex("""(?:\.|\;|\n)\s+""")
+                for (bm in prevBoundRegex.findAll(workingText.substring(0, match.range.first))) {
+                    lineStart = bm.range.last + 1
+                }
+
+                val nextBoundRegex = Regex("""(?:\.|\;|\n)(?=\s+[A-Z]|\s*$)""")
+                val nextMatch = nextBoundRegex.find(workingText, match.range.last)
+                val lineEnd = nextMatch?.range?.first ?: workingText.length
+                val clause = workingText.substring(lineStart, lineEnd).trim()
+
+                val lowerClause = clause.lowercase(Locale.ENGLISH)
+                if (lowerClause.startsWith("company") || lowerClause.contains("whatsapp group")) continue
+
+                val isDeadline = type == EventType.RESUME_SUBMISSION ||
+                        type == EventType.REGISTRATION ||
+                        clause.contains("deadline", ignoreCase = true) ||
+                        clause.contains("EOD", ignoreCase = true) ||
+                        clause.contains("end of day", ignoreCase = true) ||
+                        clause.contains("last date", ignoreCase = true)
+
+                val (startTimeRaw, endTimeRaw) = DateTimeParser.extractTimeRange(clause)
+                val startTime = if (startTimeRaw.isNotBlank()) {
+                    startTimeRaw
+                } else if (isDeadline) {
+                    PlacementEvent.DEFAULT_DEADLINE_TIME
+                } else {
+                    ""
+                }
+
+                val rawDate = detectDateString(clause)
+                // A phrase candidate must either contain its own date, its own time, or be an explicit deadline
+                if (rawDate.isBlank() && startTimeRaw.isBlank() && !isDeadline) continue
+
+                val resolvedDate = if (rawDate.isNotBlank()) {
+                    resolveDateUseCase.resolve(rawDate, referenceDate)
+                } else if (startTimeRaw.isNotBlank() || isDeadline) {
+                    val fallbackDate = detectDateString(workingText)
+                    if (fallbackDate.isNotBlank()) resolveDateUseCase.resolve(fallbackDate, referenceDate) else ""
+                } else {
+                    ""
+                }
+
+                if (resolvedDate.isBlank() && startTime.isBlank()) continue
+
+                val candidateRange = lineStart until lineEnd
+                candidates.add(
+                    EventCandidate(
+                        eventType = type,
+                        isDeadline = isDeadline,
+                        date = resolvedDate,
+                        startTime = startTime,
+                        endTime = endTimeRaw,
+                        venue = detectVenue(clause).ifBlank { globalVenue },
+                        meetingUrl = detectMeetingUrl(clause).ifBlank { globalMeetingUrl },
+                        description = clause,
+                        startIndex = match.range.first,
+                        range = candidateRange,
+                        matchedKeyword = match.value,
+                        matchedDateStr = rawDate,
+                        matchedTimeStr = startTimeRaw
+                    )
+                )
+                coveredRanges.add(candidateRange)
+            }
+        }
+
+        return candidates.sortedBy { it.startIndex }
+    }
+
+    private fun removeEventFromText(text: String, candidate: EventCandidate): String {
+        val chars = text.toCharArray()
+
+        val start = candidate.range.first.coerceIn(0, chars.size)
+        val end = minOf(candidate.range.last + 1, chars.size)
+        for (i in start until end) {
+            if (chars[i] != '\n' && chars[i] != '\r') {
+                chars[i] = ' '
+            }
+        }
+
+        var result = String(chars)
+
+        if (candidate.matchedKeyword.isNotBlank() && candidate.matchedKeyword.length > 1) {
+            val kwPattern = Regex("""\b${Pattern.quote(candidate.matchedKeyword)}\b""", RegexOption.IGNORE_CASE)
+            result = result.replace(kwPattern, " ".repeat(candidate.matchedKeyword.length))
+        }
+
+        if (candidate.matchedDateStr.isNotBlank()) {
+            val datePattern = Regex("""\b${Pattern.quote(candidate.matchedDateStr)}\b""", RegexOption.IGNORE_CASE)
+            result = result.replace(datePattern, " ".repeat(candidate.matchedDateStr.length))
+        }
+
+        if (candidate.matchedTimeStr.isNotBlank()) {
+            val timePattern = Regex("""\b${Pattern.quote(candidate.matchedTimeStr)}\b""", RegexOption.IGNORE_CASE)
+            result = result.replace(timePattern, " ".repeat(candidate.matchedTimeStr.length))
+        }
+
+        return result
     }
 
     private fun extractSingle(
@@ -230,17 +397,20 @@ class RuleBasedExtractor(
 
     private fun matchEventTypeFromLabel(label: String, rest: String): EventType? {
         val clean = label.trim().lowercase(Locale.ENGLISH)
-        if (clean.startsWith("company") || clean.startsWith("venue") || clean.startsWith("location") ||
-            clean.startsWith("profile") || clean.startsWith("role") || clean.startsWith("eligib") ||
-            clean.startsWith("ctc") || clean.startsWith("stipend") || clean.startsWith("whatsapp") ||
-            clean.startsWith("link") || clean.startsWith("note") || clean.startsWith("info")
+        if (clean.contains("venue") || clean.contains("location") || clean.contains("place") ||
+            clean.contains("profile") || clean.contains("role") || clean.contains("eligib") ||
+            clean.contains("ctc") || clean.contains("stipend") || clean.contains("salary") ||
+            clean.contains("whatsapp") || clean.contains("link") || clean.contains("note") ||
+            clean.contains("info") || clean.startsWith("company") || clean.startsWith("firm") ||
+            clean.startsWith("org")
         ) {
             return null
         }
 
         return when {
             clean.contains("resume") || clean.contains("cv") -> EventType.RESUME_SUBMISSION
-            clean.contains("gform") || clean.contains("registration") || clean.contains("register") || clean.contains("apply") -> EventType.REGISTRATION
+            clean.contains("gform") || clean.contains("registration") || clean.contains("register") ||
+                    clean.contains("reg deadline") || clean.contains("apply") -> EventType.REGISTRATION
             clean.contains("deadline") || clean.contains("last date") -> {
                 if (rest.contains("resume", ignoreCase = true) || rest.contains("cv", ignoreCase = true)) {
                     EventType.RESUME_SUBMISSION
@@ -248,8 +418,10 @@ class RuleBasedExtractor(
                     EventType.REGISTRATION
                 }
             }
-            clean.contains("ppt") || clean.contains("pre-placement") || clean.contains("pre placement") || clean.contains("talk") || clean == "presentation" || clean == "session" -> EventType.PRE_PLACEMENT_TALK
-            clean == "oa" || clean.contains("online assessment") || clean.contains("coding") || clean.contains("assessment") || clean == "test" || clean.contains("test") -> EventType.ONLINE_ASSESSMENT
+            clean.contains("ppt") || clean.contains("pre-placement") || clean.contains("pre placement") ||
+                    clean.contains("talk") || clean == "presentation" || clean == "session" -> EventType.PRE_PLACEMENT_TALK
+            clean == "oa" || clean.contains("online assessment") || clean.contains("coding") ||
+                    clean.contains("assessment") || clean == "test" || clean.contains("test") -> EventType.ONLINE_ASSESSMENT
             clean.contains("interview") -> EventType.INTERVIEW
             clean == "gd" || clean.contains("group discussion") -> EventType.GROUP_DISCUSSION
             clean == "ppi" -> EventType.PPI
